@@ -1,0 +1,25 @@
+﻿
+
+StatusCode        : 200
+StatusDescription : OK
+Content           : {"toSplit":2,"toUpload":1,"lastVideo":{"_id":"6865ae4bc760c7f7436ce090","title":"http","link"
+                    :"https://google.com","original_subtitles":[],"new_subtitles":[],"status":"splitted","platfor
+                    ms_uploaded":[...
+RawContent        : HTTP/1.1 200 OK
+                    Access-Control-Allow-Origin: *
+                    Connection: keep-alive
+                    Keep-Alive: timeout=5
+                    Content-Length: 261
+                    Content-Type: application/json; charset=utf-8
+                    Date: Wed, 02 Jul 2025 22:15:58 GMT...
+Forms             : {}
+Headers           : {[Access-Control-Allow-Origin, *], [Connection, keep-alive], [Keep-Alive, timeout=5], 
+                    [Content-Length, 261]...}
+Images            : {}
+InputFields       : {}
+Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 261
+
+
+

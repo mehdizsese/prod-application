@@ -1,0 +1,64 @@
+/* Global styles for full-page layout and consistent background color */
+
+/* Ensure full height and consistent background color for all pages */
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #0f172a !important;
+  overflow-x: hidden;
+}
+
+/* Remove any default margins or padding that might cause space issues */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Apply flex layout to the root div to ensure content fills the page */
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Ensure MUI components use the right background colors */
+.MuiBox-root,
+.MuiContainer-root,
+.MuiPaper-root,
+.MuiCard-root,
+.MuiCardContent-root,
+.MuiDialog-paper {
+  background-color: inherit;
+}
+
+/* Force specific backgrounds for certain elements */
+.MuiDrawer-paper {
+  background-color: #1e293b !important;
+}
+
+.MuiAppBar-root {
+  background-color: #1e293b !important;
+}
+
+/* Make sure page containers take full height */
+.page-container {
+  min-height: calc(100vh - 64px);
+  width: 100%;
+  background-color: #0f172a;
+  overflow-x: hidden;
+}
+
+/* Loading container */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 64px);
+  width: 100%;
+  background-color: #0f172a;
+}
