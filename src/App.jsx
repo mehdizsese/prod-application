@@ -27,6 +27,8 @@ const TABS = [
   { label: 'Paramètres', icon: <SettingsIcon /> },
 ];
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 function App() {
   const [tab, setTab] = useState(0);
   const [accounts, setAccounts] = useState([]);
@@ -52,7 +54,7 @@ function App() {
   async function login(username, password) {
     setLoginError('');
     try {
-      const res = await fetch('http://localhost:5000/api/login', {
+      const res = await fetch(`${API_URL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -70,9 +72,9 @@ function App() {
     setLoading(true);
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     const [accRes, vidRes, infoRes] = await Promise.all([
-      fetch('http://localhost:5000/api/social-accounts', { headers }),
-      fetch('http://localhost:5000/api/videos', { headers }),
-      fetch('http://localhost:5000/api/work-info', { headers }),
+      fetch(`${API_URL}/api/social-accounts`, { headers }),
+      fetch(`${API_URL}/api/videos`, { headers }),
+      fetch(`${API_URL}/api/work-info`, { headers }),
     ]);
     setAccounts(await accRes.json());
     setVideos(await vidRes.json());
@@ -81,7 +83,7 @@ function App() {
   }
 
   async function handleAddAccount() {
-    await fetch('http://localhost:5000/api/social-accounts', {
+    await fetch(`${API_URL}/api/social-accounts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newAccount)
@@ -91,7 +93,7 @@ function App() {
     fetchAll();
   }
   async function handleAddVideo() {
-    await fetch('http://localhost:5000/api/videos', {
+    await fetch(`${API_URL}/api/videos`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newVideo)
@@ -219,9 +221,9 @@ function App() {
         onSave={async (video) => {
           setOpenAddVideo(false);
           setNewVideo({ title: '', link: '', status: '', platforms_uploaded: [] });
-          await fetch('http://localhost:5000/api/videos', {
+          await fetch(`${API_URL}/api/videos`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify(video)
           });
           fetchAll();
@@ -235,9 +237,9 @@ function App() {
         onSave={async (account) => {
           setOpenAddAccount(false);
           setNewAccount({ platform: '', name: '', username: '', description: '', language: '', appId: '', accessToken: '' });
-          await fetch('http://localhost:5000/api/social-accounts', {
+          await fetch(`${API_URL}/api/social-accounts`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify(account)
           });
           fetchAll();
