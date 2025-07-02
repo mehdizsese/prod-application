@@ -11,7 +11,10 @@ app.use(cors());
 app.use(express.json());
 
 // Connexion MongoDB
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/socialvideo', {
+if (!process.env.MONGO_URI) {
+  throw new Error("La variable d'environnement MONGO_URI doit être définie !");
+}
+mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
