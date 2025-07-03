@@ -336,13 +336,16 @@ app.post('/api/social-accounts', async (req, res) => {
   }
 });
 
-// Route de login
+// Ajout d'un log détaillé sur la route login pour debug prod
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
+  console.log('LOGIN DEBUG - username:', username, 'password:', password);
   const user = await User.findOne({ username });
-  if (!user) return res.status(401).json({ error: 'Utilisateur inconnu' });
-  const valid = await bcrypt.compare(password, user.password);
-  if (!valid) return res.status(401).json({ error: 'Mot de passe incorrect' });
+  console.log('LOGIN DEBUG - user trouvé:', user);
+  if (!user) return res.status(401).json({ error: 'Utilisateur non trouvé' });
+  const isMatch = await bcrypt.compare(password, user.password);
+  console.log('LOGIN DEBUG - password match:', isMatch);
+  if (!isMatch) return res.status(401).json({ error: 'Mot de passe incorrect' });
   const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: '1d' });
   res.json({ token });
 });
