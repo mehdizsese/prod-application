@@ -28,6 +28,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
+import Snackbar from '@mui/material/Snackbar';
 
 // Fonction utilitaire pour formater le temps en secondes vers format MM:SS.mmm
 const formatTime = (timeInSeconds) => {
@@ -67,6 +68,7 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
   const [language, setLanguage] = useState('fr');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '' });
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -163,11 +165,22 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
     setEditingSubtitle({ ...editingSubtitle, [field]: value });
   };
 
-  const handleSaveAll = () => {
-    onSave({
-      original_subtitles: originalSubtitles,
-      new_subtitles: newSubtitles
-    });
+  const handleSaveAll = async () => {
+    if (!video?._id) return;
+    const type = activeTab === 0 ? 'original_subtitles' : 'new_subtitles';
+    const subtitles = activeTab === 0 ? originalSubtitles : newSubtitles;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/videos/${video._id}/subtitles`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subtitles, type })
+      });
+      if (!res.ok) throw new Error('Erreur lors de la sauvegarde');
+      setSnackbar({ open: true, message: 'Sous-titres enregistrés !' });
+      onSave && onSave();
+    } catch (e) {
+      setSnackbar({ open: true, message: 'Erreur lors de la sauvegarde' });
+    }
     onClose();
   };
 
@@ -408,6 +421,8 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
           Enregistrer les modifications
         </Button>
       </DialogActions>
+
+      <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar({ open: false, message: '' })} message={snackbar.message} />
     </Dialog>
   );
 };
