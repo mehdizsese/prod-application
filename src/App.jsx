@@ -27,7 +27,8 @@ const TABS = [
   { label: 'Paramètres', icon: <SettingsIcon /> },
 ];
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = 'https://social-media-manager-t3yg.onrender.com';
 
 function App() {
   const [tab, setTab] = useState(0);
@@ -76,9 +77,15 @@ function App() {
       fetch(`${API_URL}/api/videos`, { headers }),
       fetch(`${API_URL}/api/work-info`, { headers }),
     ]);
-    setAccounts(await accRes.json());
-    setVideos(await vidRes.json());
-    setWorkInfo(await infoRes.json());
+    const accountsData = await accRes.json();
+    const videosData = await vidRes.json();
+    const workInfoData = await infoRes.json();
+    console.log('FRONT - Comptes récupérés :', accountsData);
+    console.log('FRONT - Vidéos récupérées :', videosData);
+    console.log('FRONT - WorkInfo récupéré :', workInfoData);
+    setAccounts(accountsData);
+    setVideos(videosData);
+    setWorkInfo(workInfoData);
     setLoading(false);
   }
 

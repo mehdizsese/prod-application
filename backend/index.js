@@ -7,45 +7,127 @@ const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json());
 
+// Middleware CORS large pour toutes les routes (corrige CORS sur /api/login)
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 // Connexion MongoDB
-if (!process.env.MONGO_URI) {
-  throw new Error("La variable d'environnement MONGO_URI doit être définie !");
-}
-mongoose.connect(process.env.MONGO_URI, {
+// Connexion stricte à la base 'poadcasts' uniquement
+const MONGO_URI = (process.env.MONGO_URI || 'mongodb+srv://anasmebarki1996:5iQBRpxjdH6DZEGj@cluster0.uoemnjb.mongodb.net/poadcasts');
+
+mongoose.connect(MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
 
-// Schémas
-const SocialAccountSchema = new mongoose.Schema({
-  platform: String,
+// Schémas de base
+const BaseAccountSchema = {
   name: String,
   username: String,
   description: String,
   language: String,
-  appId: String,
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+};
+
+// Schémas spécifiques par plateforme avec noms de collection personnalisés
+const FacebookAccount = mongoose.model('FacebookAccount', new mongoose.Schema({
+  ...BaseAccountSchema,
+  pageId: String,
   accessToken: String,
+  pageCategory: String
+}), 'facebook-accounts');
+
+const InstagramAccount = mongoose.model('InstagramAccount', new mongoose.Schema({
+  ...BaseAccountSchema,
+  businessAccountId: String,
+  accessToken: String,
+  profilePicture: String
+}), 'instagram-accounts');
+
+const TikTokAccount = mongoose.model('TikTokAccount', new mongoose.Schema({
+  ...BaseAccountSchema,
+  accountId: String,
+  accessToken: String,
+  refreshToken: String,
+  followerCount: Number
+}), 'tiktok-accounts');
+
+const SnapchatAccount = mongoose.model('SnapchatAccount', new mongoose.Schema({
+  ...BaseAccountSchema,
+  clientId: String,
+  clientSecret: String,
+  refreshToken: String
+}), 'snapchat-accounts');
+
+const YouTubeAccount = mongoose.model('YouTubeAccount', new mongoose.Schema({
+  ...BaseAccountSchema,
+  channelId: String,
+  accessToken: String,
+  refreshToken: String,
+  subscriberCount: Number
+}), 'youtube-accounts');
+
+// Schéma vidéo
+const SubtitleSchema = new mongoose.Schema({
+  startTime: Number,
+  endTime: Number,
+  text: String,
+  language: String
 });
-const VideoSchema = new mongoose.Schema({
+
+const Video = mongoose.model('Video', new mongoose.Schema({
   title: String,
   link: String,
-  original_subtitles: Array,
-  new_subtitles: Array,
-  status: String,
-  platforms_uploaded: Array,
+  originalFilename: String,
+  duration: Number,
+  original_subtitles: [SubtitleSchema],
+  new_subtitles: [SubtitleSchema],
+  status: {
+    type: String,
+    enum: ['uploaded', 'processing', 'splitted', 'published'],
+    default: 'uploaded'
+  },
+  platforms_uploaded: [{
+    platform: String,
+    accountId: String,
+    uploadDate: Date,
+    postUrl: String,
+    metrics: {
+      views: Number,
+      likes: Number,
+      comments: Number,
+      shares: Number
+    }
+  }],
   createdAt: { type: Date, default: Date.now },
-});
+  updatedAt: { type: Date, default: Date.now }
+}), 'videos');
+
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
-  password: { type: String, required: true }, // hashé
+  password: { type: String, required: true },
+  email: String,
+  role: { type: String, enum: ['user', 'admin'], default: 'user' },
+  lastLogin: Date,
+  createdAt: { type: Date, default: Date.now }
 });
-const SocialAccount = mongoose.model('SocialAccount', SocialAccountSchema);
-const Video = mongoose.model('Video', VideoSchema);
-const User = mongoose.model('User', UserSchema);
 
+// Création des modèles
 const JWT_SECRET = typeof process !== 'undefined' && process.env && process.env.JWT_SECRET ? process.env.JWT_SECRET : 'changeme';
 
 // Middleware d'authentification
@@ -61,37 +143,196 @@ function authMiddleware(req, res, next) {
   }
 }
 
-// Endpoints
+// Endpoints pour comptes sociaux
 app.get('/api/social-accounts', async (req, res) => {
-  const accounts = await SocialAccount.find();
-  res.json(accounts);
-});
-app.get('/api/videos', async (req, res) => {
-  const videos = await Video.find();
-  res.json(videos);
-});
-app.post('/api/videos', async (req, res) => {
-  const video = new Video(req.body);
-  await video.save();
-  res.json(video);
-});
-app.get('/api/work-info', async (req, res) => {
-  const toSplit = await Video.countDocuments({ status: 'splitted' });
-  const toUpload = await Video.countDocuments({ status: 'uploaded' });
-  const lastVideo = await Video.findOne().sort({ createdAt: -1 });
-  let accountsCount = 0;
-  let processedVideos = 0;
+  console.log('HEADERS /api/social-accounts :', req.headers);
   try {
-    accountsCount = await SocialAccount.countDocuments();
-    processedVideos = await Video.countDocuments({ status: 'uploaded' });
-  } catch {} // catch vide
-  res.json({ toSplit, toUpload, lastVideo, accountsCount, processedVideos });
+    // Récupérer les comptes de toutes les plateformes
+    const [facebook, instagram, tiktok, snapchat, youtube] = await Promise.all([
+      FacebookAccount.find(),
+      InstagramAccount.find(),
+      TikTokAccount.find(),
+      SnapchatAccount.find(),
+      YouTubeAccount.find()
+    ]);
+
+    // Formater la réponse pour maintenir la compatibilité avec le frontend existant
+    const accounts = [
+      ...facebook.map(acc => ({ ...acc.toObject(), platform: 'facebook' })),
+      ...instagram.map(acc => ({ ...acc.toObject(), platform: 'instagram' })),
+      ...tiktok.map(acc => ({ ...acc.toObject(), platform: 'tiktok' })),
+      ...snapchat.map(acc => ({ ...acc.toObject(), platform: 'snapchat' })),
+      ...youtube.map(acc => ({ ...acc.toObject(), platform: 'youtube' }))
+    ];
+
+    console.log('API /api/social-accounts renvoie :', accounts);
+    res.json(accounts);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
-// Ajout d'un compte social
+
+// Récupérer les comptes d'une plateforme spécifique
+app.get('/api/social-accounts/:platform', async (req, res) => {
+  try {
+    const { platform } = req.params;
+    let accounts = [];
+    
+    switch (platform) {
+      case 'facebook':
+        accounts = await FacebookAccount.find();
+        break;
+      case 'instagram':
+        accounts = await InstagramAccount.find();
+        break;
+      case 'tiktok':
+        accounts = await TikTokAccount.find();
+        break;
+      case 'snapchat':
+        accounts = await SnapchatAccount.find();
+        break;
+      case 'youtube':
+        accounts = await YouTubeAccount.find();
+        break;
+      default:
+        return res.status(400).json({ error: 'Plateforme non prise en charge' });
+    }
+    
+    res.json(accounts);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Endpoints pour vidéos
+app.get('/api/videos', async (req, res) => {
+  console.log('HEADERS /api/videos :', req.headers);
+  try {
+    const videos = await Video.find().sort({ createdAt: -1 });
+    console.log('API /api/videos renvoie :', videos);
+    res.json(videos);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/videos', async (req, res) => {
+  try {
+    const video = new Video(req.body);
+    await video.save();
+    res.json(video);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/videos/:id', async (req, res) => {
+  try {
+    const video = await Video.findById(req.params.id);
+    if (!video) return res.status(404).json({ error: 'Vidéo non trouvée' });
+    res.json(video);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/videos/:id/subtitles', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { subtitles, type } = req.body;
+    
+    if (!['original_subtitles', 'new_subtitles'].includes(type)) {
+      return res.status(400).json({ error: 'Type de sous-titres invalide' });
+    }
+    
+    const updateData = {};
+    updateData[type] = subtitles;
+    
+    const video = await Video.findByIdAndUpdate(
+      id, 
+      { $set: updateData },
+      { new: true }
+    );
+    
+    if (!video) return res.status(404).json({ error: 'Vidéo non trouvée' });
+    res.json(video);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/work-info', async (req, res) => {
+  console.log('HEADERS /api/work-info :', req.headers);
+  try {
+    const toSplit = await Video.countDocuments({ status: 'uploaded' });
+    const toUpload = await Video.countDocuments({ status: 'processing' });
+    const published = await Video.countDocuments({ status: 'published' });
+    const lastVideo = await Video.findOne().sort({ createdAt: -1 });
+    
+    // Compter tous les comptes sociaux
+    const [facebookCount, instagramCount, tiktokCount, snapchatCount, youtubeCount] = await Promise.all([
+      FacebookAccount.countDocuments(),
+      InstagramAccount.countDocuments(),
+      TikTokAccount.countDocuments(),
+      SnapchatAccount.countDocuments(),
+      YouTubeAccount.countDocuments()
+    ]);
+    
+    const accountsCount = facebookCount + instagramCount + tiktokCount + snapchatCount + youtubeCount;
+    const processedVideos = await Video.countDocuments({ status: 'published' });
+    
+    console.log('API /api/work-info appelée');
+    res.json({ 
+      toSplit, 
+      toUpload, 
+      lastVideo, 
+      accountsCount, 
+      processedVideos,
+      published,
+      accountsByPlatform: {
+        facebook: facebookCount,
+        instagram: instagramCount,
+        tiktok: tiktokCount,
+        snapchat: snapchatCount,
+        youtube: youtubeCount
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Ajout d'un compte social selon la plateforme
 app.post('/api/social-accounts', async (req, res) => {
-  const account = new SocialAccount(req.body);
-  await account.save();
-  res.json(account);
+  try {
+    const { platform, ...accountData } = req.body;
+    let account;
+    
+    switch (platform) {
+      case 'facebook':
+        account = new FacebookAccount(accountData);
+        break;
+      case 'instagram':
+        account = new InstagramAccount(accountData);
+        break;
+      case 'tiktok':
+        account = new TikTokAccount(accountData);
+        break;
+      case 'snapchat':
+        account = new SnapchatAccount(accountData);
+        break;
+      case 'youtube':
+        account = new YouTubeAccount(accountData);
+        break;
+      default:
+        return res.status(400).json({ error: 'Plateforme non prise en charge' });
+    }
+    
+    await account.save();
+    res.json({ ...account.toObject(), platform });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Route de login

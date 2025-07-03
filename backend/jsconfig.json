@@ -1,0 +1,8 @@
+{
+  "type": "commonjs",
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2020"
+  },
+  "exclude": ["../src", "../public"]
+}
