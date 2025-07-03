@@ -7,12 +7,12 @@ const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const app = express();
+app.use(express.json());
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-app.use(express.json());
 
 // Middleware CORS large pour toutes les routes (corrige CORS sur /api/login)
 app.use((req, res, next) => {
