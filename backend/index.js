@@ -118,14 +118,15 @@ const Video = mongoose.model('Video', new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 }), 'videos');
 
-const UserSchema = new mongoose.Schema({
+// Ajout du modèle User si manquant
+const User = mongoose.models.User || mongoose.model('User', new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   email: String,
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
   lastLogin: Date,
   createdAt: { type: Date, default: Date.now }
-});
+}), 'users');
 
 // Création des modèles
 const JWT_SECRET = typeof process !== 'undefined' && process.env && process.env.JWT_SECRET ? process.env.JWT_SECRET : 'changeme';
