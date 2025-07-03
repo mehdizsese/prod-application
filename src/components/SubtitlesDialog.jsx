@@ -19,7 +19,8 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel
+  InputLabel,
+  DialogContentText
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -51,6 +52,8 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
   const [editingSubtitle, setEditingSubtitle] = useState(null);
   const [editIndex, setEditIndex] = useState(-1);
   const [language, setLanguage] = useState('fr');
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -113,6 +116,28 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
     setEditIndex(-1);
   };
 
+  const askDeleteSubtitle = (index) => {
+    setPendingDeleteIndex(index);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (pendingDeleteIndex !== null) {
+      if (activeTab === 0) {
+        setOriginalSubtitles(originalSubtitles.filter((_, i) => i !== pendingDeleteIndex));
+      } else {
+        setNewSubtitles(newSubtitles.filter((_, i) => i !== pendingDeleteIndex));
+      }
+    }
+    setConfirmOpen(false);
+    setPendingDeleteIndex(null);
+  };
+
+  const handleCancelDelete = () => {
+    setConfirmOpen(false);
+    setPendingDeleteIndex(null);
+  };
+
   const deleteSubtitle = (index) => {
     if (activeTab === 0) {
       setOriginalSubtitles(originalSubtitles.filter((_, i) => i !== index));
@@ -160,8 +185,9 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
           const mapped = imported.map(s => ({
             startTime: s.startTime,
             endTime: s.endTime,
-            text: s.title,
-            durationSeconds: s.durationSeconds
+            text: s.title || s.text || '',
+            durationSeconds: s.durationSeconds,
+            language: s.language || language
           }));
           if (activeTab === 0) setOriginalSubtitles(mapped);
           else setNewSubtitles(mapped);
@@ -303,16 +329,13 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
                 <React.Fragment key={index}>
                   {index > 0 && <Divider />}
                   <ListItem 
-                    sx={{ 
-                      py: 1,
-                      bgcolor: index % 2 === 0 ? 'transparent' : '#f8fafc'
-                    }}
+                    sx={{ py: 1, bgcolor: index % 2 === 0 ? 'transparent' : '#f8fafc' }}
                     secondaryAction={
                       <Box>
                         <IconButton edge="end" aria-label="edit" onClick={() => startEditSubtitle(subtitle, index)} disabled={!!editingSubtitle}>
                           <EditIcon fontSize="small" />
                         </IconButton>
-                        <IconButton edge="end" aria-label="delete" onClick={() => deleteSubtitle(index)} disabled={!!editingSubtitle}>
+                        <IconButton edge="end" aria-label="delete" onClick={() => askDeleteSubtitle(index)} disabled={!!editingSubtitle}>
                           <DeleteIcon fontSize="small" />
                         </IconButton>
                       </Box>
@@ -343,6 +366,20 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
             </List>
           </Paper>
         )}
+        
+        {/* Dialog de confirmation suppression */}
+        <Dialog open={confirmOpen} onClose={handleCancelDelete}>
+          <DialogTitle>Confirmer la suppression</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              Voulez-vous vraiment supprimer ce sous-titre ? Cette action est irréversible.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCancelDelete} color="inherit" variant="outlined">Annuler</Button>
+            <Button onClick={handleConfirmDelete} color="error" variant="contained">Supprimer</Button>
+          </DialogActions>
+        </Dialog>
       </DialogContent>
       
       <DialogActions sx={{ px: 3, pb: 3 }}>

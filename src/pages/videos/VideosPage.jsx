@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, 
   TableHead, TableRow, Chip, IconButton, Stack, Tooltip, Menu, MenuItem, 
-  TextField, InputAdornment, TablePagination, TableSortLabel, Avatar
+  TextField, InputAdornment, TablePagination, TableSortLabel, Avatar, Button
 } from '@mui/material';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import FacebookIcon from '@mui/icons-material/Facebook';
@@ -16,6 +16,11 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SubtitlesIcon from '@mui/icons-material/Subtitles';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContentText from '@mui/material/DialogContentText';
 
 const statusColors = {
   uploaded: { bg: '#065f46', color: '#d1fae5' },
@@ -31,7 +36,12 @@ const VideosPage = ({ videos }) => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [orderBy, setOrderBy] = useState('title');
   const [order, setOrder] = useState('asc');
+  // anchorEl stocke l'élément ET la vidéo sélectionnée
   const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedVideo, setSelectedVideo] = useState(null);
+  const [openEdit, setOpenEdit] = useState(false);
+  const [openSubtitles, setOpenSubtitles] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const handleSort = (property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -48,11 +58,38 @@ const VideosPage = ({ videos }) => {
     setPage(0);
   };
 
-  const handleMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
+  const handleMenuOpen = (event, video) => {
+    setAnchorEl({ anchor: event.currentTarget, video });
+    setSelectedVideo(video);
   };
   const handleMenuClose = () => {
     setAnchorEl(null);
+  };
+  // Ouvre la modale édition
+  const handleEdit = () => {
+    setOpenEdit(true);
+    handleMenuClose();
+  };
+  // Ouvre la modale sous-titres
+  const handleSubtitles = () => {
+    setOpenSubtitles(true);
+    handleMenuClose();
+  };
+  // Ouvre la confirmation suppression
+  const handleDelete = () => {
+    setConfirmDeleteOpen(true);
+    handleMenuClose();
+  };
+  // Suppression vidéo
+  const handleConfirmDelete = async () => {
+    if (!selectedVideo?._id) return;
+    await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/videos/${selectedVideo._id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    setConfirmDeleteOpen(false);
+    setSelectedVideo(null);
+    if (typeof window !== 'undefined') window.location.reload(); // ou mieux : refetchAll()
   };
 
   console.log('VIDEOS PAGE - vidéos reçues :', videos);
@@ -169,11 +206,33 @@ const VideosPage = ({ videos }) => {
           sx={{ color: '#94a3b8', borderTop: '1px solid #334155', '.MuiTablePagination-toolbar': { px: 3 }, '.MuiTablePagination-select': { color: '#e2e8f0' }, '.MuiTablePagination-selectIcon': { color: '#94a3b8' }, '.MuiButtonBase-root': { color: '#3b82f6' } }}
         />
       </TableContainer>
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose} PaperProps={{ sx: { bgcolor: '#1e293b', color: '#e2e8f0', border: '1px solid #334155' } }}>
-        <MenuItem onClick={handleMenuClose} sx={{ gap: 2 }}><EditIcon sx={{ fontSize: 18 }} /> Modifier</MenuItem>
-        <MenuItem onClick={handleMenuClose} sx={{ gap: 2 }}><SubtitlesIcon sx={{ fontSize: 18 }} /> Gérer les sous-titres</MenuItem>
-        <MenuItem onClick={handleMenuClose} sx={{ gap: 2, color: '#ef4444' }}><DeleteIcon sx={{ fontSize: 18 }} /> Supprimer</MenuItem>
+      {/* Menu contextuel actions vidéo */}
+      <Menu anchorEl={anchorEl?.anchor} open={Boolean(anchorEl)} onClose={handleMenuClose} PaperProps={{ sx: { bgcolor: '#1e293b', color: '#e2e8f0', border: '1px solid #334155' } }}>
+        <MenuItem onClick={handleEdit} sx={{ gap: 2 }}><EditIcon sx={{ fontSize: 18 }} /> Modifier</MenuItem>
+        <MenuItem onClick={handleSubtitles} sx={{ gap: 2 }}><SubtitlesIcon sx={{ fontSize: 18 }} /> Gérer les sous-titres</MenuItem>
+        <MenuItem onClick={handleDelete} sx={{ gap: 2, color: '#ef4444' }}><DeleteIcon sx={{ fontSize: 18 }} /> Supprimer</MenuItem>
       </Menu>
+      {/* Dialog de confirmation suppression vidéo */}
+      <Dialog open={confirmDeleteOpen} onClose={() => setConfirmDeleteOpen(false)}>
+        <DialogTitle>Confirmer la suppression</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Voulez-vous vraiment supprimer cette vidéo ? Cette action est irréversible.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDeleteOpen(false)} color="inherit" variant="outlined">Annuler</Button>
+          <Button onClick={handleConfirmDelete} color="error" variant="contained">Supprimer</Button>
+        </DialogActions>
+      </Dialog>
+      {/* Dialog édition vidéo */}
+      {openEdit && (
+        <VideoDialog open={openEdit} onClose={() => setOpenEdit(false)} video={selectedVideo} onSave={() => setOpenEdit(false)} />
+      )}
+      {/* Dialog sous-titres */}
+      {openSubtitles && (
+        <SubtitlesDialog open={openSubtitles} onClose={() => setOpenSubtitles(false)} video={selectedVideo} onSave={() => setOpenSubtitles(false)} />
+      )}
     </Box>
   );
 };
