@@ -36,7 +36,7 @@ const LANGUAGES = [
   { value: 'es', label: 'Espagnol' }
 ];
 
-const VideoDialog = ({ open, onClose, video, onSave }) => {
+const VideoDialog = ({ open, onClose, video, onSave, onDelete }) => {
   const [localVideo, setLocalVideo] = React.useState(video || {});
   React.useEffect(() => { setLocalVideo(video || {}); }, [video, open]);
 
@@ -44,11 +44,28 @@ const VideoDialog = ({ open, onClose, video, onSave }) => {
     setLocalVideo((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // On garde tous les champs pour compatibilité
     if (!localVideo.title || !localVideo.link || !localVideo.status) return;
-    onSave(localVideo);
+    if (video && video._id) {
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/videos/${video._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(localVideo)
+      });
+      onSave && onSave(localVideo);
+    } else {
+      onSave(localVideo);
+    }
+    onClose();
+  };
+  const handleDelete = async () => {
+    if (!video?._id) return;
+    await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/videos/${video._id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    onDelete && onDelete(video);
     onClose();
   };
 
@@ -171,6 +188,9 @@ const VideoDialog = ({ open, onClose, video, onSave }) => {
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={onClose} color="inherit" variant="outlined">Annuler</Button>
+          {video && video._id && (
+            <Button onClick={handleDelete} color="error" variant="outlined">Supprimer</Button>
+          )}
           <Button type="submit" color="primary" variant="contained">Enregistrer</Button>
         </DialogActions>
       </form>

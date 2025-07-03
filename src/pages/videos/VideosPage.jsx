@@ -32,7 +32,7 @@ const statusColors = {
   new: { bg: '#334155', color: '#e2e8f0' }
 };
 
-const VideosPage = ({ videos }) => {
+const VideosPage = ({ videos, fetchAll }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -72,18 +72,7 @@ const VideosPage = ({ videos }) => {
     setOpenEdit(true);
     handleMenuClose();
   };
-  // Ouvre la modale sous-titres
-  const handleSubtitles = () => {
-    setOpenSubtitles(true);
-    handleMenuClose();
-  };
-  // Ouvre la confirmation suppression
-  const handleDelete = () => {
-    setConfirmDeleteOpen(true);
-    handleMenuClose();
-  };
-  // Suppression vidéo
-  const handleConfirmDelete = async () => {
+  const handleDelete = async () => {
     if (!selectedVideo?._id) return;
     await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/videos/${selectedVideo._id}`, {
       method: 'DELETE',
@@ -91,7 +80,12 @@ const VideosPage = ({ videos }) => {
     });
     setConfirmDeleteOpen(false);
     setSelectedVideo(null);
-    if (typeof window !== 'undefined') window.location.reload(); // ou mieux : refetchAll()
+    fetchAll();
+  };
+  // Ouvre la confirmation suppression
+  const handleConfirmDelete = () => {
+    setConfirmDeleteOpen(true);
+    handleMenuClose();
   };
 
   console.log('VIDEOS PAGE - vidéos reçues :', videos);
@@ -229,7 +223,7 @@ const VideosPage = ({ videos }) => {
       </Dialog>
       {/* Dialog édition vidéo */}
       {openEdit && (
-        <VideoDialog open={openEdit} onClose={() => setOpenEdit(false)} video={selectedVideo} onSave={() => setOpenEdit(false)} />
+        <VideoDialog open={openEdit} onClose={() => setOpenEdit(false)} video={selectedVideo} onSave={fetchAll} onDelete={fetchAll} />
       )}
       {/* Dialog sous-titres */}
       {openSubtitles && (
