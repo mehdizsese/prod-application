@@ -26,6 +26,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 
 // Fonction utilitaire pour formater le temps en secondes vers format MM:SS.mmm
 const formatTime = (timeInSeconds) => {
@@ -146,6 +147,32 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
     setEditIndex(-1);
   };
 
+  // Ajout : import JSON de sous-titres
+  const handleImportJson = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (Array.isArray(imported)) {
+          // On mappe le format fourni vers le format interne (text = title)
+          const mapped = imported.map(s => ({
+            startTime: s.startTime,
+            endTime: s.endTime,
+            text: s.title,
+            durationSeconds: s.durationSeconds
+          }));
+          if (activeTab === 0) setOriginalSubtitles(mapped);
+          else setNewSubtitles(mapped);
+        }
+      } catch (err) {
+        alert('Erreur lors de l\'import du JSON : ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const currentSubtitles = activeTab === 0 ? originalSubtitles : newSubtitles;
 
   return (
@@ -240,17 +267,29 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
           <Typography variant="subtitle1" fontWeight={600}>
             {activeTab === 0 ? 'Sous-titres originaux' : 'Sous-titres modifiés'} ({currentSubtitles.length})
           </Typography>
-          
-          <Button 
-            startIcon={<AddIcon />} 
-            onClick={addNewSubtitle}
-            variant="outlined"
-            color="primary"
-            size="small"
-            disabled={!!editingSubtitle}
-          >
-            Ajouter
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              startIcon={<UploadFileIcon />}
+              component="label"
+              variant="outlined"
+              color="secondary"
+              size="small"
+              disabled={!!editingSubtitle}
+            >
+              Importer JSON
+              <input type="file" accept="application/json" hidden onChange={handleImportJson} />
+            </Button>
+            <Button 
+              startIcon={<AddIcon />} 
+              onClick={addNewSubtitle}
+              variant="outlined"
+              color="primary"
+              size="small"
+              disabled={!!editingSubtitle}
+            >
+              Ajouter
+            </Button>
+          </Box>
         </Box>
         
         {currentSubtitles.length === 0 && !editingSubtitle ? (

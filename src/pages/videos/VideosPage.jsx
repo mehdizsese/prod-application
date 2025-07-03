@@ -79,11 +79,6 @@ const VideosPage = ({ videos }) => {
 
   return (
     <Box sx={{ width: '100%', minHeight: '100%', height: '100%', bgcolor: '#0f172a', p: { xs: 3, md: 4, lg: 6 }, overflowY: 'auto' }}>
-      {/* Affichage brut pour debug UTF-8/arabe */}
-      <Box sx={{ mb: 2, bgcolor: '#1e293b', color: '#fbbf24', p: 2, borderRadius: 2, fontSize: 13, fontFamily: 'monospace', overflowX: 'auto' }}>
-        <strong>Debug vidéos (JSON):</strong>
-        <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', direction: 'rtl' }}>{JSON.stringify(videos, null, 2)}</pre>
-      </Box>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight={700} color="#ffffff" mb={2}>
           Bibliothèque de vidéos
