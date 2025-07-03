@@ -394,22 +394,22 @@ app.delete('/api/videos/:id', async (req, res) => {
   }
 });
 
-// Route pour modifier un compte social
+// Route pour modifier un compte social (corrigée)
 app.put('/api/social-accounts/:id', async (req, res) => {
   console.log('[API] PUT /api/social-accounts/' + req.params.id, req.body);
   try {
     const { id } = req.params;
     const data = req.body;
-    let model;
-    switch (data.platform) {
-      case 'facebook': model = FacebookAccount; break;
-      case 'instagram': model = InstagramAccount; break;
-      case 'tiktok': model = TikTokAccount; break;
-      case 'snapchat': model = SnapchatAccount; break;
-      case 'shorts': model = YouTubeAccount; break;
-      default: return res.status(400).json({ error: 'Plateforme non prise en charge' });
+    // Recherche le modèle qui contient ce compte
+    const models = [FacebookAccount, InstagramAccount, TikTokAccount, SnapchatAccount, YouTubeAccount];
+    let updated = null;
+    for (const model of models) {
+      const exists = await model.findById(id);
+      if (exists) {
+        updated = await model.findByIdAndUpdate(id, data, { new: true });
+        break;
+      }
     }
-    const updated = await model.findByIdAndUpdate(id, data, { new: true });
     if (!updated) return res.status(404).json({ error: 'Compte non trouvé' });
     res.json(updated);
   } catch (error) {

@@ -44,13 +44,18 @@ const VideoDialog = ({ open, onClose, video, onSave, onDelete }) => {
     setLocalVideo((prev) => ({ ...prev, [field]: value }));
   };
 
+  const getToken = () => localStorage.getItem('token') || '';
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!localVideo.title || !localVideo.link || !localVideo.status) return;
     if (video && video._id) {
       await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/videos/${video._id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`
+        },
         body: JSON.stringify(localVideo)
       });
       onSave && onSave(localVideo);
@@ -63,7 +68,10 @@ const VideoDialog = ({ open, onClose, video, onSave, onDelete }) => {
     if (!video?._id) return;
     await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/videos/${video._id}`, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      }
     });
     onDelete && onDelete(video);
     onClose();

@@ -54,6 +54,7 @@ const AccountDialog = ({ open, onClose, account, onSave, onDelete }) => {
   const handleChange = (field, value) => {
     setLocalAccount({ ...localAccount, [field]: value });
   };
+  const getToken = () => localStorage.getItem('token') || '';
   const handleSubmit = async (e) => {
     e.preventDefault();
     const platformFields = PLATFORM_FIELDS[localAccount.platform] || [];
@@ -61,11 +62,13 @@ const AccountDialog = ({ open, onClose, account, onSave, onDelete }) => {
     const cleaned = Object.fromEntries(Object.entries(localAccount).filter(([k]) => keepFields.includes(k)));
     const missing = platformFields.filter(f => f.required && !cleaned[f.name]);
     if (!cleaned.platform || !cleaned.name || !cleaned.language || missing.length > 0) return;
-    // Si _id présent, update, sinon ajout
     if (account && account._id) {
       await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/social-accounts/${account._id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`
+        },
         body: JSON.stringify(cleaned)
       });
       onSave && onSave(cleaned);
@@ -77,9 +80,18 @@ const AccountDialog = ({ open, onClose, account, onSave, onDelete }) => {
   const handleDelete = () => {
     setConfirmOpen(true);
   };
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     setConfirmOpen(false);
-    onDelete && onDelete(account);
+    if (onDelete && account && account._id) {
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/social-accounts/${account._id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`
+        }
+      });
+      onDelete(account);
+    }
   };
   const handleCancelDelete = () => {
     setConfirmOpen(false);
