@@ -91,6 +91,10 @@ const VideosPage = ({ videos, fetchAll }) => {
     setConfirmDeleteOpen(true);
     handleMenuClose();
   };
+  const handleSubtitles = () => {
+    setOpenSubtitles(true);
+    handleMenuClose();
+  };
 
   console.log('VIDEOS PAGE - vidéos reçues :', videos);
 
