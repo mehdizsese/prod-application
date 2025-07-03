@@ -192,6 +192,8 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
     setEditingSubtitle({ ...editingSubtitle, [field]: value });
   };
 
+  const getToken = () => localStorage.getItem('token') || '';
+
   const handleSaveAll = async () => {
     if (!video?._id) return;
     const type = activeTab === 0 ? 'original_subtitles' : 'new_subtitles';
@@ -199,7 +201,10 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/videos/${video._id}/subtitles`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`
+        },
         body: JSON.stringify({ subtitles, type })
       });
       if (!res.ok) throw new Error('Erreur lors de la sauvegarde');
