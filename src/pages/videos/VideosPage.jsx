@@ -72,11 +72,15 @@ const VideosPage = ({ videos, fetchAll }) => {
     setOpenEdit(true);
     handleMenuClose();
   };
+  const getToken = () => localStorage.getItem('token') || '';
   const handleDelete = async () => {
     if (!selectedVideo?._id) return;
     await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/videos/${selectedVideo._id}`, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
     });
     setConfirmDeleteOpen(false);
     setSelectedVideo(null);

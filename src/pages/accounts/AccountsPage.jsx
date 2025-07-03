@@ -28,11 +28,15 @@ const AccountsPage = ({ accounts, fetchAll }) => {
     setOpenDialog(false);
     setSelectedAccount(null);
   };
+  const getToken = () => localStorage.getItem('token') || '';
   const handleDelete = async (acc) => {
     if (!acc?._id) return;
     await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/social-accounts/${acc._id}`, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
     });
     setOpenDialog(false);
     setSelectedAccount(null);
