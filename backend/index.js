@@ -148,6 +148,14 @@ function authMiddleware(req, res, next) {
   }
 }
 
+// Log global pour toutes les requêtes API
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    console.log(`[API] ${req.method} ${req.path}`);
+  }
+  next();
+});
+
 // Endpoints pour comptes sociaux
 app.get('/api/social-accounts', async (req, res) => {
   console.log('HEADERS /api/social-accounts :', req.headers);
@@ -361,6 +369,31 @@ app.use((req, res, next) => {
   next();
 });
 
+// Place les routes PUT/DELETE vidéos AVANT le middleware d'auth
+app.put('/api/videos/:id', async (req, res) => {
+  console.log('[API] PUT /api/videos/' + req.params.id, req.body);
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    const video = await Video.findByIdAndUpdate(id, updateData, { new: true });
+    if (!video) return res.status(404).json({ error: 'Vidéo non trouvée' });
+    res.json(video);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+app.delete('/api/videos/:id', async (req, res) => {
+  console.log('[API] DELETE /api/videos/' + req.params.id);
+  try {
+    const { id } = req.params;
+    const deleted = await Video.findByIdAndDelete(id);
+    if (!deleted) return res.status(404).json({ error: 'Vidéo non trouvée' });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Route pour modifier un compte social
 app.put('/api/social-accounts/:id', async (req, res) => {
   console.log('[API] PUT /api/social-accounts/' + req.params.id, req.body);
@@ -397,31 +430,6 @@ app.delete('/api/social-accounts/:id', async (req, res) => {
       if (deleted) break;
     }
     if (!deleted) return res.status(404).json({ error: 'Compte non trouvé' });
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Ajoute logs sur vidéos
-app.put('/api/videos/:id', async (req, res) => {
-  console.log('[API] PUT /api/videos/' + req.params.id, req.body);
-  try {
-    const { id } = req.params;
-    const updateData = req.body;
-    const video = await Video.findByIdAndUpdate(id, updateData, { new: true });
-    if (!video) return res.status(404).json({ error: 'Vidéo non trouvée' });
-    res.json(video);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-app.delete('/api/videos/:id', async (req, res) => {
-  console.log('[API] DELETE /api/videos/' + req.params.id);
-  try {
-    const { id } = req.params;
-    const deleted = await Video.findByIdAndDelete(id);
-    if (!deleted) return res.status(404).json({ error: 'Vidéo non trouvée' });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
