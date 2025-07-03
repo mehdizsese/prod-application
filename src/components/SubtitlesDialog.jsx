@@ -60,6 +60,29 @@ function parseAnyTime(val) {
   return isNaN(n) ? 0 : n;
 }
 
+// Fonction pour parser un fichier SRT en objets sous-titres
+function parseSRT(srtText, language) {
+  const blocks = srtText.split(/\r?\n\r?\n/);
+  const subtitles = [];
+  for (const block of blocks) {
+    const lines = block.split(/\r?\n/).filter(Boolean);
+    if (lines.length < 2) continue;
+    // Ignore l'index (première ligne)
+    const timeLine = lines[1].includes('-->') ? lines[1] : lines[0];
+    const textLines = lines[1].includes('-->') ? lines.slice(2) : lines.slice(1);
+    const match = timeLine.match(/(\d{2}:\d{2}:\d{2},\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2},\d{3})/);
+    if (!match) continue;
+    const [ , start, end ] = match;
+    subtitles.push({
+      startTime: parseAnyTime(start),
+      endTime: parseAnyTime(end),
+      text: textLines.join(' '),
+      language: language
+    });
+  }
+  return subtitles;
+}
+
 const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [originalSubtitles, setOriginalSubtitles] = useState(video?.original_subtitles || []);
@@ -202,33 +225,41 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
     setEditIndex(-1);
   };
 
-  // Ajout : import JSON de sous-titres (robuste)
-  const handleImportJson = (event) => {
+  // Ajout : import JSON ou SRT de sous-titres (robuste)
+  const handleImportFile = (event) => {
     const file = event.target.files[0];
     if (!file) return;
+    const ext = file.name.split('.').pop().toLowerCase();
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const imported = JSON.parse(e.target.result);
-        if (Array.isArray(imported)) {
-          // On mappe le format fourni vers le format interne (text = title)
-          const mapped = imported.map(s => {
-            const st = parseAnyTime(s.startTime);
-            const et = parseAnyTime(s.endTime);
-            if (isNaN(st) || isNaN(et)) return null;
-            return {
-              startTime: st,
-              endTime: et,
-              text: s.title || s.text || '',
-              durationSeconds: s.durationSeconds,
-              language: s.language || language
-            };
-          }).filter(Boolean);
-          if (activeTab === 0) setOriginalSubtitles(mapped);
-          else setNewSubtitles(mapped);
+        if (ext === 'json') {
+          const imported = JSON.parse(e.target.result);
+          if (Array.isArray(imported)) {
+            const mapped = imported.map(s => {
+              const st = parseAnyTime(s.startTime);
+              const et = parseAnyTime(s.endTime);
+              if (isNaN(st) || isNaN(et)) return null;
+              return {
+                startTime: st,
+                endTime: et,
+                text: s.title || s.text || '',
+                durationSeconds: s.durationSeconds,
+                language: s.language || language
+              };
+            }).filter(Boolean);
+            if (activeTab === 0) setOriginalSubtitles(mapped);
+            else setNewSubtitles(mapped);
+          }
+        } else if (ext === 'srt') {
+          const parsed = parseSRT(e.target.result, language);
+          if (activeTab === 0) setOriginalSubtitles(parsed);
+          else setNewSubtitles(parsed);
+        } else {
+          alert('Format non supporté. Utilisez un fichier .json ou .srt');
         }
       } catch (err) {
-        alert('Erreur lors de l\'import du JSON : ' + err.message);
+        alert('Erreur lors de l\'import : ' + err.message);
       }
     };
     reader.readAsText(file);
@@ -338,8 +369,8 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
               size="small"
               disabled={!!editingSubtitle}
             >
-              Importer JSON
-              <input type="file" accept="application/json" hidden onChange={handleImportJson} />
+              Importer JSON/SRT
+              <input type="file" accept=".json,.srt,application/json,text/srt" hidden onChange={handleImportFile} />
             </Button>
             <Button 
               startIcon={<AddIcon />} 
