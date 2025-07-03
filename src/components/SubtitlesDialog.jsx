@@ -37,13 +37,26 @@ const formatTime = (timeInSeconds) => {
   return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
 };
 
-// Fonction utilitaire pour convertir le format MM:SS.mmm en secondes
-const parseTime = (timeString) => {
-  if (!timeString) return 0;
-  const [minutesSeconds, milliseconds] = timeString.split('.');
-  const [minutes, seconds] = minutesSeconds.split(':').map(Number);
-  return minutes * 60 + seconds + (milliseconds ? Number(milliseconds) / 1000 : 0);
-};
+// Nouvelle fonction robuste pour parser le temps (accepte HH:MM:SS,mmm ou MM:SS.mmm ou nombre)
+function parseAnyTime(val) {
+  if (typeof val === 'number') return val;
+  if (!val) return 0;
+  // Format SRT : HH:MM:SS,mmm
+  if (val.includes(':') && val.includes(',')) {
+    const [hms, ms] = val.split(',');
+    const [h, m, s] = hms.split(':').map(Number);
+    return h * 3600 + m * 60 + Number(s) + (ms ? Number(ms) / 1000 : 0);
+  }
+  // Format MM:SS.mmm
+  if (val.includes(':') && val.includes('.')) {
+    const [ms, milli] = val.split('.');
+    const [m, s] = ms.split(':').map(Number);
+    return m * 60 + Number(s) + (milli ? Number(milli) / 1000 : 0);
+  }
+  // Format nombre
+  const n = Number(val);
+  return isNaN(n) ? 0 : n;
+}
 
 const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
   const [activeTab, setActiveTab] = useState(0);
@@ -72,8 +85,8 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
 
   const startEditSubtitle = (subtitle, index) => {
     setEditingSubtitle({
-      startTime: subtitle.startTime,
-      endTime: subtitle.endTime,
+      startTime: typeof subtitle.startTime === 'number' && !isNaN(subtitle.startTime) ? subtitle.startTime : 0,
+      endTime: typeof subtitle.endTime === 'number' && !isNaN(subtitle.endTime) ? subtitle.endTime : 0,
       text: subtitle.text,
       language: subtitle.language || language
     });
@@ -159,7 +172,7 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
   };
 
   const handleTimeChange = (field, value) => {
-    handleChange(field, parseTime(value));
+    handleChange(field, parseAnyTime(value));
   };
 
   const addNewSubtitle = () => {
@@ -172,7 +185,7 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
     setEditIndex(-1);
   };
 
-  // Ajout : import JSON de sous-titres
+  // Ajout : import JSON de sous-titres (robuste)
   const handleImportJson = (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -182,13 +195,18 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
         const imported = JSON.parse(e.target.result);
         if (Array.isArray(imported)) {
           // On mappe le format fourni vers le format interne (text = title)
-          const mapped = imported.map(s => ({
-            startTime: s.startTime,
-            endTime: s.endTime,
-            text: s.title || s.text || '',
-            durationSeconds: s.durationSeconds,
-            language: s.language || language
-          }));
+          const mapped = imported.map(s => {
+            const st = parseAnyTime(s.startTime);
+            const et = parseAnyTime(s.endTime);
+            if (isNaN(st) || isNaN(et)) return null;
+            return {
+              startTime: st,
+              endTime: et,
+              text: s.title || s.text || '',
+              durationSeconds: s.durationSeconds,
+              language: s.language || language
+            };
+          }).filter(Boolean);
           if (activeTab === 0) setOriginalSubtitles(mapped);
           else setNewSubtitles(mapped);
         }
