@@ -29,6 +29,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import Snackbar from '@mui/material/Snackbar';
+import TablePagination from '@mui/material/TablePagination';
 
 // Fonction utilitaire pour formater le temps en secondes vers format MM:SS.mmm
 const formatTime = (timeInSeconds) => {
@@ -69,6 +70,8 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '' });
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -78,6 +81,7 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
       setEditingSubtitle(null);
       setEditIndex(-1);
       setActiveTab(0);
+      setPage(0);
     }
   }, [open, video]);
 
@@ -231,6 +235,7 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
   };
 
   const currentSubtitles = activeTab === 0 ? originalSubtitles : newSubtitles;
+  const paginatedSubtitles = currentSubtitles.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -354,19 +359,20 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
             Aucun sous-titre disponible
           </Typography>
         ) : (
+          <>
           <Paper variant="outlined" sx={{ maxHeight: 400, overflow: 'auto' }}>
             <List disablePadding>
-              {currentSubtitles.map((subtitle, index) => (
-                <React.Fragment key={index}>
+              {paginatedSubtitles.map((subtitle, index) => (
+                <React.Fragment key={page * rowsPerPage + index}>
                   {index > 0 && <Divider />}
                   <ListItem 
-                    sx={{ py: 1, bgcolor: index % 2 === 0 ? 'transparent' : '#f8fafc' }}
+                    sx={{ py: 1, bgcolor: (page * rowsPerPage + index) % 2 === 0 ? 'transparent' : '#f8fafc' }}
                     secondaryAction={
                       <Box>
-                        <IconButton edge="end" aria-label="edit" onClick={() => startEditSubtitle(subtitle, index)} disabled={!!editingSubtitle}>
+                        <IconButton edge="end" aria-label="edit" onClick={() => startEditSubtitle(subtitle, page * rowsPerPage + index)} disabled={!!editingSubtitle}>
                           <EditIcon fontSize="small" />
                         </IconButton>
-                        <IconButton edge="end" aria-label="delete" onClick={() => askDeleteSubtitle(index)} disabled={!!editingSubtitle}>
+                        <IconButton edge="end" aria-label="delete" onClick={() => askDeleteSubtitle(page * rowsPerPage + index)} disabled={!!editingSubtitle}>
                           <DeleteIcon fontSize="small" />
                         </IconButton>
                       </Box>
@@ -396,6 +402,17 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
               ))}
             </List>
           </Paper>
+          <TablePagination
+            rowsPerPageOptions={[25, 50, 100, 200]}
+            component="div"
+            count={currentSubtitles.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={(_, newPage) => setPage(newPage)}
+            onRowsPerPageChange={e => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+            sx={{ color: '#94a3b8', borderTop: '1px solid #334155', '.MuiTablePagination-toolbar': { px: 3 }, '.MuiTablePagination-select': { color: '#e2e8f0' }, '.MuiTablePagination-selectIcon': { color: '#94a3b8' }, '.MuiButtonBase-root': { color: '#3b82f6' } }}
+          />
+          </>
         )}
         
         {/* Dialog de confirmation suppression */}
