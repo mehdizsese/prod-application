@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, MenuItem, FormControl, InputLabel, Select, Typography, Box } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, MenuItem, FormControl, InputLabel, Select, Typography, Box, DialogContentText } from '@mui/material';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import MovieIcon from '@mui/icons-material/Movie'; // Pour Shorts
@@ -46,8 +46,10 @@ const PLATFORM_FIELDS = {
   ],
 };
 
-const AccountDialog = ({ open, onClose, account, onSave }) => {
+const AccountDialog = ({ open, onClose, account, onSave, onDelete }) => {
   const [localAccount, setLocalAccount] = React.useState(account);
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+
   React.useEffect(() => { setLocalAccount(account); }, [account, open]);
   const handleChange = (field, value) => {
     setLocalAccount({ ...localAccount, [field]: value });
@@ -63,6 +65,16 @@ const AccountDialog = ({ open, onClose, account, onSave }) => {
     if (!cleaned.platform || !cleaned.name || !cleaned.language || missing.length > 0) return;
     onSave(cleaned);
     onClose();
+  };
+  const handleDelete = () => {
+    setConfirmOpen(true);
+  };
+  const handleConfirmDelete = () => {
+    setConfirmOpen(false);
+    onDelete && onDelete(account);
+  };
+  const handleCancelDelete = () => {
+    setConfirmOpen(false);
   };
   const platformFields = PLATFORM_FIELDS[localAccount.platform] || [];
 
@@ -144,18 +156,34 @@ const AccountDialog = ({ open, onClose, account, onSave }) => {
             />
           ))}
         </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
+        <DialogActions>
           <Button onClick={onClose} sx={{ color: '#6b7280' }}>Annuler</Button>
+          {account && account._id && (
+            <Button onClick={handleDelete} color="error" variant="outlined">Supprimer</Button>
+          )}
           <Button 
             type="submit"
             variant="contained" 
             sx={{ bgcolor: '#6366f1', '&:hover': { bgcolor: '#4f46e5' } }}
             disabled={!localAccount.platform || !localAccount.name || !localAccount.language}
           >
-            Ajouter
+            {account && account._id ? 'Enregistrer' : 'Ajouter'}
           </Button>
         </DialogActions>
       </form>
+      {/* Dialog de confirmation suppression */}
+      <Dialog open={confirmOpen} onClose={handleCancelDelete}>
+        <DialogTitle>Confirmer la suppression</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Voulez-vous vraiment supprimer ce compte ? Cette action est irréversible.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDelete} color="inherit" variant="outlined">Annuler</Button>
+          <Button onClick={handleConfirmDelete} color="error" variant="contained">Supprimer</Button>
+        </DialogActions>
+      </Dialog>
     </Dialog>
   );
 };

@@ -31,21 +31,23 @@ const STATUSES = [
 const LANGUAGES = [
   { value: 'fr', label: 'Français' },
   { value: 'en', label: 'Anglais' },
-  { value: 'es', label: 'Espagnol' },
-  { value: 'de', label: 'Allemand' }
+  { value: 'ar', label: 'Arabe' },
+  { value: 'zh', label: 'Chinois' },
+  { value: 'es', label: 'Espagnol' }
 ];
 
 const VideoDialog = ({ open, onClose, video, onSave }) => {
-  const [localVideo, setLocalVideo] = React.useState(video);
-  React.useEffect(() => { setLocalVideo(video); }, [video, open]);
-  
+  const [localVideo, setLocalVideo] = React.useState(video || {});
+  React.useEffect(() => { setLocalVideo(video || {}); }, [video, open]);
+
   const handleChange = (field, value) => {
-    setLocalVideo({ ...localVideo, [field]: value });
+    setLocalVideo((prev) => ({ ...prev, [field]: value }));
   };
-  
+
   const handleSubmit = (e) => {
     e.preventDefault();
     // On garde tous les champs pour compatibilité
+    if (!localVideo.title || !localVideo.link || !localVideo.status) return;
     onSave(localVideo);
     onClose();
   };

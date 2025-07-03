@@ -1,11 +1,12 @@
 import React from 'react';
-import { Box, Typography, Grid, Card, CardContent, Avatar, Stack, Chip } from '@mui/material';
+import { Box, Typography, Grid, Card, CardContent, Avatar, Stack, Chip, Button } from '@mui/material';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import MusicNoteIcon from '@mui/icons-material/MusicNote'; 
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import MovieIcon from '@mui/icons-material/Movie';
 import WorkIcon from '@mui/icons-material/Work';
+import AccountDialog from '../../components/AccountDialog';
 
 const platformIcons = {
   facebook: <FacebookIcon sx={{ color: '#1877f3' }} />,
@@ -15,7 +16,29 @@ const platformIcons = {
   shorts: <MovieIcon sx={{ color: '#ff0000' }} />
 };
 
-const AccountsPage = ({ accounts }) => {
+const AccountsPage = ({ accounts, fetchAll }) => {
+  const [selectedAccount, setSelectedAccount] = React.useState(null);
+  const [openDialog, setOpenDialog] = React.useState(false);
+
+  const handleEdit = (acc) => {
+    setSelectedAccount(acc);
+    setOpenDialog(true);
+  };
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setSelectedAccount(null);
+  };
+  const handleDelete = async (acc) => {
+    if (!acc?._id) return;
+    await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/social-accounts/${acc._id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    setOpenDialog(false);
+    setSelectedAccount(null);
+    if (fetchAll) fetchAll();
+  };
+
   return (
     <Box sx={{ width: '100%', minHeight: '100%', height: '100%', bgcolor: '#0f172a', p: { xs: 3, md: 4, lg: 6 }, overflowY: 'auto' }}>
       <Box sx={{ mb: 4 }}>
@@ -104,10 +127,15 @@ const AccountsPage = ({ accounts }) => {
                     }} 
                   />
                 </Stack>
+                <Button onClick={() => handleEdit(acc)} color="primary" variant="outlined" sx={{ mt: 2 }}>Modifier / Supprimer</Button>
               </CardContent>
             </Card>
           </Grid>
         ))}      </Grid>
+      {/* Dialog édition/suppression compte */}
+      {openDialog && (
+        <AccountDialog open={openDialog} onClose={handleCloseDialog} account={selectedAccount} onSave={handleCloseDialog} onDelete={handleDelete} />
+      )}
     </Box>
   );
 };
