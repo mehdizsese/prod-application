@@ -18,12 +18,14 @@ const PLATFORMS = [
   { value: 'youtube', label: 'YouTube', icon: <YouTubeIcon /> }
 ];
 
+// Ajout du status 'pending' si besoin
 const STATUSES = [
   { value: 'new', label: 'Nouveau' },
   { value: 'splitted', label: 'Découpé' },
   { value: 'uploaded', label: 'Téléchargé' },
   { value: 'processing', label: 'En traitement' },
-  { value: 'published', label: 'Publié' }
+  { value: 'published', label: 'Publié' },
+  { value: 'pending', label: 'En attente' }
 ];
 
 const LANGUAGES = [
@@ -43,16 +45,8 @@ const VideoDialog = ({ open, onClose, video, onSave }) => {
   
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Nettoyer les champs inutiles
-    const keepFields = [
-      'title', 'link', 'status', 'platforms_uploaded', 
-      'originalFilename', 'duration', 'language',
-      'original_subtitles', 'new_subtitles'
-    ];
-    const cleaned = Object.fromEntries(Object.entries(localVideo).filter(([k]) => keepFields.includes(k)));
-    // Validation: tous les champs obligatoires doivent être remplis
-    if (!cleaned.title || !cleaned.link || !cleaned.status) return;
-    onSave(cleaned);
+    // On garde tous les champs pour compatibilité
+    onSave(localVideo);
     onClose();
   };
 

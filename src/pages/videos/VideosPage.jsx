@@ -21,6 +21,8 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContentText from '@mui/material/DialogContentText';
+import VideoDialog from '../../components/VideoDialog';
+import SubtitlesDialog from '../../components/SubtitlesDialog';
 
 const statusColors = {
   uploaded: { bg: '#065f46', color: '#d1fae5' },

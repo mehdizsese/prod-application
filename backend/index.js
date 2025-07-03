@@ -83,40 +83,44 @@ const YouTubeAccount = mongoose.model('YouTubeAccount', new mongoose.Schema({
 }), 'youtube-accounts');
 
 // Schéma vidéo
-const SubtitleSchema = new mongoose.Schema({
+// Schéma pour subtitles imbriqués
+const SubSubtitlesSchema = new mongoose.Schema({
   startTime: Number,
   endTime: Number,
-  text: String,
-  language: String
-});
+  text: String
+}, { _id: false });
 
-const Video = mongoose.model('Video', new mongoose.Schema({
+const ItemSchema = new mongoose.Schema({
+  randomId: String,
+  startTime: Number,
+  endTime: Number,
+  subtitles: [SubSubtitlesSchema],
+  caption: String,
+  status: String,
+  title: String,
+  url: String,
+  index: Number
+}, { _id: false });
+
+const LanguageSchema = new mongoose.Schema({
+  language: String,
+  items: [ItemSchema]
+}, { _id: false });
+
+const VideoSchema = new mongoose.Schema({
   title: String,
   link: String,
-  originalFilename: String,
-  duration: Number,
-  original_subtitles: [SubtitleSchema],
-  new_subtitles: [SubtitleSchema],
   status: {
     type: String,
-    enum: ['uploaded', 'processing', 'splitted', 'published'],
+    enum: ['uploaded', 'processing', 'splitted', 'published', 'pending'],
     default: 'uploaded'
   },
-  platforms_uploaded: [{
-    platform: String,
-    accountId: String,
-    uploadDate: Date,
-    postUrl: String,
-    metrics: {
-      views: Number,
-      likes: Number,
-      comments: Number,
-      shares: Number
-    }
-  }],
+  languages: [LanguageSchema],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
-}), 'videos');
+}, { strict: false });
+
+const Video = mongoose.models.Video || mongoose.model('Video', VideoSchema, 'videos');
 
 // Ajout du modèle User si manquant
 const User = mongoose.models.User || mongoose.model('User', new mongoose.Schema({
