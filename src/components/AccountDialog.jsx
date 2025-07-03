@@ -54,16 +54,24 @@ const AccountDialog = ({ open, onClose, account, onSave, onDelete }) => {
   const handleChange = (field, value) => {
     setLocalAccount({ ...localAccount, [field]: value });
   };
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Nettoyer les champs non nécessaires à la plateforme
     const platformFields = PLATFORM_FIELDS[localAccount.platform] || [];
     const keepFields = ['platform', 'name', 'username', 'description', 'language', ...platformFields.map(f => f.name)];
     const cleaned = Object.fromEntries(Object.entries(localAccount).filter(([k]) => keepFields.includes(k)));
-    // Validation: tous les champs obligatoires doivent être remplis
     const missing = platformFields.filter(f => f.required && !cleaned[f.name]);
     if (!cleaned.platform || !cleaned.name || !cleaned.language || missing.length > 0) return;
-    onSave(cleaned);
+    // Si _id présent, update, sinon ajout
+    if (account && account._id) {
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/social-accounts/${account._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cleaned)
+      });
+      onSave && onSave(cleaned);
+    } else {
+      onSave(cleaned);
+    }
     onClose();
   };
   const handleDelete = () => {

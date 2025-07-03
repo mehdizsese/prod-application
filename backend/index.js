@@ -361,5 +361,45 @@ app.use((req, res, next) => {
   next();
 });
 
+// Route pour modifier un compte social
+app.put('/api/social-accounts/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = req.body;
+    let model;
+    switch (data.platform) {
+      case 'facebook': model = FacebookAccount; break;
+      case 'instagram': model = InstagramAccount; break;
+      case 'tiktok': model = TikTokAccount; break;
+      case 'snapchat': model = SnapchatAccount; break;
+      case 'shorts': model = YouTubeAccount; break;
+      default: return res.status(400).json({ error: 'Plateforme non prise en charge' });
+    }
+    const updated = await model.findByIdAndUpdate(id, data, { new: true });
+    if (!updated) return res.status(404).json({ error: 'Compte non trouvé' });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route pour supprimer un compte social
+app.delete('/api/social-accounts/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    // On cherche dans tous les modèles
+    const models = [FacebookAccount, InstagramAccount, TikTokAccount, SnapchatAccount, YouTubeAccount];
+    let deleted = null;
+    for (const model of models) {
+      deleted = await model.findByIdAndDelete(id);
+      if (deleted) break;
+    }
+    if (!deleted) return res.status(404).json({ error: 'Compte non trouvé' });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 const PORT = typeof process !== 'undefined' && process.env && process.env.PORT ? process.env.PORT : 5000;
 app.listen(PORT, () => console.log('Backend running on port', PORT));
