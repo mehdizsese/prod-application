@@ -363,6 +363,7 @@ app.use((req, res, next) => {
 
 // Route pour modifier un compte social
 app.put('/api/social-accounts/:id', async (req, res) => {
+  console.log('[API] PUT /api/social-accounts/' + req.params.id, req.body);
   try {
     const { id } = req.params;
     const data = req.body;
@@ -385,6 +386,7 @@ app.put('/api/social-accounts/:id', async (req, res) => {
 
 // Route pour supprimer un compte social
 app.delete('/api/social-accounts/:id', async (req, res) => {
+  console.log('[API] DELETE /api/social-accounts/' + req.params.id);
   try {
     const { id } = req.params;
     // On cherche dans tous les modèles
@@ -395,6 +397,31 @@ app.delete('/api/social-accounts/:id', async (req, res) => {
       if (deleted) break;
     }
     if (!deleted) return res.status(404).json({ error: 'Compte non trouvé' });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Ajoute logs sur vidéos
+app.put('/api/videos/:id', async (req, res) => {
+  console.log('[API] PUT /api/videos/' + req.params.id, req.body);
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    const video = await Video.findByIdAndUpdate(id, updateData, { new: true });
+    if (!video) return res.status(404).json({ error: 'Vidéo non trouvée' });
+    res.json(video);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+app.delete('/api/videos/:id', async (req, res) => {
+  console.log('[API] DELETE /api/videos/' + req.params.id);
+  try {
+    const { id } = req.params;
+    const deleted = await Video.findByIdAndDelete(id);
+    if (!deleted) return res.status(404).json({ error: 'Vidéo non trouvée' });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
