@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, CssBaseline, Drawer, List, ListItem, ListItemIcon, ListItemText, Toolbar, AppBar, Typography, IconButton, Button } from '@mui/material';
+import { Box, CssBaseline, Toolbar, AppBar, Typography, IconButton, Button } from '@mui/material';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -141,7 +141,7 @@ function App() {
   return (
     <Box sx={{ 
       display: 'flex', 
-      bgcolor: '#0f172a', 
+      bgcolor: '#fff', 
       minHeight: '100vh', 
       width: '100%', 
       position: 'absolute', 
@@ -151,53 +151,52 @@ function App() {
       right: 0,
       overflow: 'hidden' 
     }}>
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: '#1e293b', boxShadow: 'none', borderBottom: '1px solid #334155' }}>
-        <Toolbar sx={{ px: 4 }}>
-          <IconButton color="inherit" edge="start" sx={{ mr: 2, color: '#e2e8f0' }}><MenuIcon /></IconButton>
-          <Typography variant="h5" noWrap sx={{ flexGrow: 1, color: '#ffffff', fontWeight: 800 }}>Social Video Manager</Typography>
+      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: '#f8fafc', boxShadow: 'none', borderBottom: '1px solid #e5e7eb' }}>
+        <Toolbar sx={{ px: 4, minHeight: 64 }}>
+          <Typography variant="h5" noWrap sx={{ flexGrow: 0, color: '#0f172a', fontWeight: 800, mr: 4 }}>Social Video Manager</Typography>
+          {/* Navigation principale sous forme de Tabs horizontaux */}
+          <Box sx={{ flexGrow: 1 }}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              {TABS.map((tabItem, idx) => (
+                <Button
+                  key={tabItem.label}
+                  onClick={() => setTab(idx)}
+                  startIcon={tabItem.icon}
+                  sx={{
+                    color: tab === idx ? '#2563eb' : '#334155',
+                    bgcolor: tab === idx ? '#e0e7ef' : 'transparent',
+                    fontWeight: tab === idx ? 700 : 600,
+                    borderRadius: 3,
+                    px: 3,
+                    py: 1.5,
+                    fontSize: '1rem',
+                    textTransform: 'none',
+                    boxShadow: 'none',
+                    '&:hover': { bgcolor: '#f1f5f9', color: '#1e293b' }
+                  }}
+                >
+                  {tabItem.label}
+                </Button>
+              ))}
+            </Box>
+          </Box>
           {token && (
-            <Button onClick={() => setToken('')} sx={{ ml: 2, bgcolor: '#334155', color: '#fff', borderRadius: 3, px: 3, py: 1, fontWeight: 600, textTransform: 'none', '&:hover': { bgcolor: '#3b82f6' } }}>
+            <Button onClick={() => setToken('')} sx={{ ml: 2, bgcolor: '#e5e7eb', color: '#0f172a', borderRadius: 3, px: 3, py: 1, fontWeight: 600, textTransform: 'none', '&:hover': { bgcolor: '#f87171', color: '#fff' } }}>
               Se déconnecter
             </Button>
           )}
           {tab === 1 && (
-            <Button variant="contained" sx={{ bgcolor: '#3b82f6', color: 'white', textTransform: 'none', fontWeight: 600, borderRadius: 3, px: 4, py: 1.5 }} startIcon={<AddIcon />} onClick={() => setOpenAddVideo(true)}>Ajouter une vidéo</Button>
+            <Button variant="contained" sx={{ bgcolor: '#2563eb', color: 'white', textTransform: 'none', fontWeight: 600, borderRadius: 3, px: 4, py: 1.5, ml: 2 }} startIcon={<AddIcon />} onClick={() => setOpenAddVideo(true)}>Ajouter une vidéo</Button>
           )}
           {tab === 2 && (
-            <Button variant="contained" sx={{ bgcolor: '#3b82f6', color: 'white', textTransform: 'none', fontWeight: 600, borderRadius: 3, px: 4, py: 1.5 }} startIcon={<AddIcon />} onClick={() => setOpenAddAccount(true)}>Ajouter un compte</Button>
+            <Button variant="contained" sx={{ bgcolor: '#2563eb', color: 'white', textTransform: 'none', fontWeight: 600, borderRadius: 3, px: 4, py: 1.5, ml: 2 }} startIcon={<AddIcon />} onClick={() => setOpenAddAccount(true)}>Ajouter un compte</Button>
           )}
         </Toolbar>
       </AppBar>
-      <Drawer variant="permanent" sx={{ width: drawerWidth, flexShrink: 0, [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box', bgcolor: '#1e293b', borderRight: '1px solid #334155' } }}>
-        <Toolbar />
-        <Box sx={{ overflow: 'auto', p: 3, bgcolor: '#1e293b', height: '100%' }}>
-          <List sx={{ '& .MuiListItem-root': { mb: 2 } }}>
-            {TABS.map((tabItem, idx) => (
-              <ListItem 
-                button 
-                key={tabItem.label} 
-                selected={tab === idx} 
-                onClick={() => setTab(idx)} 
-                sx={{ 
-                  borderRadius: 4, 
-                  bgcolor: tab === idx ? '#3b82f6' : 'transparent', 
-                  color: tab === idx ? '#ffffff' : '#94a3b8',
-                  '&:hover': { bgcolor: tab === idx ? '#3b82f6' : '#334155' },
-                  '&.Mui-selected': { bgcolor: '#3b82f6' },
-                  py: 2,
-                  px: 3
-                }}
-              >
-                <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}>{tabItem.icon}</ListItemIcon>
-                <ListItemText primary={tabItem.label} sx={{ '& .MuiTypography-root': { fontWeight: tab === idx ? 700 : 600, fontSize: '1rem' } }} />
-              </ListItem>
-            ))}
-          </List>
-        </Box>
-      </Drawer>
+      {/* Plus de Drawer/sidebar */}
       <Box component="main" sx={{ 
         flexGrow: 1, 
-        bgcolor: '#0f172a', 
+        bgcolor: '#fff', 
         minHeight: '100vh', 
         height: '100vh', 
         overflow: 'auto', 
@@ -214,12 +213,11 @@ function App() {
           maxWidth: '100%', 
           overflowX: 'hidden',
           overflowY: 'auto',
-          bgcolor: '#0f172a',
+          bgcolor: '#fff',
         }}>
           {renderTabContent()}
         </Box>
       </Box>
-
       {/* Dialogues modaux pour l'ajout de vidéos et de comptes */}
       <VideoDialog 
         open={openAddVideo}
