@@ -48,24 +48,36 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 function App() {
   const [token, setToken] = useState(() => localStorage.getItem('token') || '');
   const [loginError, setLoginError] = useState('');
+  console.log('API URL:', API_URL);
 
   useEffect(() => {
     if (token) localStorage.setItem('token', token);
     else localStorage.removeItem('token');
   }, [token]);
-
   async function login(username, password) {
+    console.log('Tentative de connexion avec:', username);
     setLoginError('');
     try {
+      console.log('Appel API login vers:', `${API_URL}/api/login`);
       const res = await fetch(`${API_URL}/api/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({ username, password })
       });
-      if (!res.ok) throw new Error('Identifiants invalides');
+      console.log('Réponse API:', res.status);
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Erreur API:', errorText);
+        throw new Error('Identifiants invalides');
+      }
       const data = await res.json();
+      console.log('Token reçu:', data.token ? 'Oui' : 'Non');
       setToken(data.token);
     } catch (e) {
+      console.error('Erreur lors de la connexion:', e);
       setLoginError(e.message || 'Erreur de connexion');
     }
   }

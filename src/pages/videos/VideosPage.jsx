@@ -218,11 +218,32 @@ const VideosPage = ({ videos, fetchAll }) => {
                         <Typography variant="body2" color="#64748b" fontStyle="italic">Aucune langue</Typography>
                       )}
                     </Stack>
-                  </TableCell>
-                  <TableCell sx={{ borderBottom: '1px solid #e5e7eb', py: 2.5 }}>
-                    <IconButton aria-label="more actions" size="small" sx={{ color: '#94a3b8' }} onClick={(e) => handleMenuOpen(e, video)}>
-                      <MoreVertIcon />
-                    </IconButton>
+                  </TableCell>                  <TableCell sx={{ borderBottom: '1px solid #e5e7eb', py: 2.5 }}>
+                    <Stack direction="row" spacing={1}>
+                      <IconButton 
+                        aria-label="voir détails" 
+                        size="small" 
+                        sx={{ color: '#3b82f6' }}
+                        component={Link}
+                        to={`/videos/${video._id}`}
+                      >
+                        <PlayCircleIcon />
+                      </IconButton>
+                      <IconButton 
+                        aria-label="supprimer" 
+                        size="small" 
+                        sx={{ color: '#ef4444' }}
+                        onClick={() => {
+                          setSelectedVideo(video);
+                          setConfirmDeleteOpen(true);
+                        }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                      <IconButton aria-label="more actions" size="small" sx={{ color: '#94a3b8' }} onClick={(e) => handleMenuOpen(e, video)}>
+                        <MoreVertIcon />
+                      </IconButton>
+                    </Stack>
                   </TableCell>
                 </TableRow>
               ))

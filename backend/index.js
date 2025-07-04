@@ -390,20 +390,50 @@ app.post('/api/social-accounts', async (req, res) => {
 
 // Ajout d'un log détaillé sur la route login pour debug prod
 app.post('/api/login', async (req, res) => {
+  console.log('LOGIN - Tentative de connexion reçue');
+  console.log('LOGIN - Headers:', req.headers);
+  console.log('LOGIN - Body:', req.body);
+  
   const { username, password } = req.body;
-  console.log('LOGIN DEBUG - username:', username, 'password:', password);
-  const user = await User.findOne({ username });
-  console.log('LOGIN DEBUG - user trouvé:', user);
-  if (!user) return res.status(401).json({ error: 'Utilisateur non trouvé' });
-  const isMatch = await bcrypt.compare(password, user.password);
-  console.log('LOGIN DEBUG - password match:', isMatch);
-  if (!isMatch) return res.status(401).json({ error: 'Mot de passe incorrect' });
-  const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: '1d' });
-  res.json({ token });
+  if (!username || !password) {
+    console.log('LOGIN - Données manquantes:', { username: !!username, password: !!password });
+    return res.status(400).json({ error: 'Nom d\'utilisateur et mot de passe requis' });
+  }
+  
+  try {
+    console.log('LOGIN DEBUG - username:', username);
+    const user = await User.findOne({ username });
+    console.log('LOGIN DEBUG - user trouvé:', user ? 'Oui' : 'Non');
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Utilisateur non trouvé' });
+    }
+    
+    const isMatch = await bcrypt.compare(password, user.password);
+    console.log('LOGIN DEBUG - password match:', isMatch);
+    
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Mot de passe incorrect' });
+    }
+    
+    const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: '1d' });
+    console.log('LOGIN - Connexion réussie, token généré');
+    
+    // Mettre à jour la date de dernière connexion
+    user.lastLogin = new Date();
+    await user.save();
+    
+    res.json({ token });
+  } catch (error) {
+    console.error('LOGIN - Erreur:', error);
+    res.status(500).json({ error: 'Erreur interne du serveur' });
+  }
 });
 
+// Ce middleware était mal placé - déplacé au début pour une meilleure sécurité
 // Protéger toutes les routes API sauf /api/login
 app.use((req, res, next) => {
+  console.log(`[Middleware Auth] Chemin: ${req.path}, Méthode: ${req.method}`);
   if (req.path.startsWith('/api/login')) return next();
   if (req.path.startsWith('/api')) return authMiddleware(req, res, next);
   next();

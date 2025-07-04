@@ -6,6 +6,8 @@ import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import MovieIcon from '@mui/icons-material/Movie';
 import WorkIcon from '@mui/icons-material/Work';
+import PlayCircleIcon from '@mui/icons-material/PlayCircle';
+import DeleteIcon from '@mui/icons-material/Delete';
 import AccountDialog from '../../components/AccountDialog';
 
 const platformIcons = {
@@ -97,8 +99,7 @@ const AccountsPage = ({ accounts, fetchAll }) => {
                       {acc.description}
                     </Typography>
                   </Box>
-                </Stack>
-                <Stack direction="row" spacing={3} mt="auto">
+                </Stack>                <Stack direction="row" spacing={3} mt="auto">
                   <Chip 
                     label={acc.platform} 
                     size="medium" 
@@ -131,7 +132,34 @@ const AccountsPage = ({ accounts, fetchAll }) => {
                     }} 
                   />
                 </Stack>
-                <Button onClick={() => handleEdit(acc)} color="primary" variant="outlined" sx={{ mt: 2 }}>Modifier / Supprimer</Button>
+                <Stack direction="row" spacing={2} mt={2} sx={{ width: '100%' }}>
+                  <Button 
+                    startIcon={<PlayCircleIcon />} 
+                    variant="contained" 
+                    sx={{ 
+                      bgcolor: '#3b82f6', 
+                      color: '#ffffff',
+                      flex: 1,
+                      '&:hover': { bgcolor: '#2563eb' }
+                    }}
+                    onClick={() => handleEdit(acc)}
+                  >
+                    Voir
+                  </Button>
+                  <Button 
+                    startIcon={<DeleteIcon />}
+                    variant="outlined" 
+                    sx={{ 
+                      borderColor: '#ef4444', 
+                      color: '#ef4444',
+                      flex: 1,
+                      '&:hover': { bgcolor: '#fee2e2', borderColor: '#dc2626' }
+                    }}
+                    onClick={() => handleDelete(acc)}
+                  >
+                    Supprimer
+                  </Button>
+                </Stack>
               </CardContent>
             </Card>
           </Grid>
