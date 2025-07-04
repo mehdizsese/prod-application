@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Typography, Grid, Card, CardContent, Avatar, Stack, Chip, LinearProgress } from '@mui/material';
+import InsightsIcon from '@mui/icons-material/Insights';
 
 const InsightsPage = ({ info }) => {
   if (!info) {
@@ -9,7 +10,7 @@ const InsightsPage = ({ info }) => {
       </Box>
     );
   }
-  const stats = [
+  const cards = [
     {
       title: 'Comptes actifs',
       value: typeof info.accountsCount === 'number' ? info.accountsCount : '-',
@@ -46,46 +47,36 @@ const InsightsPage = ({ info }) => {
 
   return (
     <Box sx={{ width: '100%', minHeight: '100%', height: '100%', bgcolor: '#fff', p: { xs: 3, md: 4, lg: 6 }, overflowY: 'auto' }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight={800} color="#18181b" mb={2} letterSpacing={1}>
+      <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
+        <InsightsIcon sx={{ fontSize: 36, color: '#18181b' }} />
+        <Typography variant="h4" fontWeight={800} color="#18181b" letterSpacing={1}>
           Dashboard
         </Typography>
-        <Typography variant="body1" color="#64748b" mb={4}>
-          Vue d'ensemble de l'activité de vos vidéos et comptes sociaux
-        </Typography>
       </Box>
-      
-      {/* Stats Cards */}
-      <Grid container spacing={{ xs: 3, sm: 4, md: 5, lg: 6 }} mb={4}>
-        {stats.map((stat, idx) => (
-          <Grid item xs={12} sm={6} md={4} key={idx}>
-            <Card sx={{ 
-              height: '200px',
-              borderRadius: 6, 
-              boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)', 
-              bgcolor: '#0f172a', 
-              border: '1px solid #334155',
-              transition: 'all 0.3s ease-in-out',
-              '&:hover': { 
-                boxShadow: '0 25px 50px -12px rgb(59 130 246 / 0.5)', 
-                transform: 'translateY(-8px) scale(1.05)'
-              }
-            }}>
-              <CardContent sx={{ p: { xs: 3, sm: 4, md: 5 }, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Typography variant="h6" fontWeight={700} color="#ffffff" mb={1}>
-                  {stat.title}
-                </Typography>
-                <Typography variant="h3" fontWeight={700} color="#ffffff" mb={1}>
-                  {stat.value}
-                </Typography>
-                <Typography variant="body2" color="#94a3b8" fontWeight={600}>
-                  {stat.subtitle}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
+      <Typography variant="body1" color="#64748b" mb={4}>
+        Vue d'ensemble de l'activité de vos vidéos et comptes sociaux
+      </Typography>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
+        {cards.map((card, idx) => (
+          <Box key={idx} sx={{
+            flex: '1 1 220px',
+            minWidth: 220,
+            bgcolor: '#fff',
+            borderRadius: 4,
+            boxShadow: '0 2px 12px 0 #f1f5f9',
+            p: 3,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            gap: 1,
+            border: '1px solid #e5e7eb',
+          }}>
+            <Typography variant="h6" fontWeight={700} color="#18181b">{card.title}</Typography>
+            <Typography variant="h4" fontWeight={800} color="#18181b">{card.value}</Typography>
+            <Typography variant="body2" color="#64748b">{card.subtitle}</Typography>
+          </Box>
         ))}
-      </Grid>
+      </Box>
 
       {/* Progress Section */}
       <Grid container spacing={{ xs: 3, sm: 4, md: 5, lg: 6 }} mb={4}>

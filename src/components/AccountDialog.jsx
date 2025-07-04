@@ -99,10 +99,10 @@ const AccountDialog = ({ open, onClose, account, onSave, onDelete }) => {
   const platformFields = PLATFORM_FIELDS[localAccount.platform] || [];
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { bgcolor: '#fff', borderRadius: 4, boxShadow: '0 2px 12px 0 #f1f5f9' } }}>
       <form onSubmit={handleSubmit}>
-        <DialogTitle sx={{ fontWeight: 600, color: '#111827' }}>Ajouter un compte réseau social</DialogTitle>
-        <DialogContent>
+        <DialogTitle sx={{ fontWeight: 700, color: '#18181b', bgcolor: '#fff', borderBottom: '1px solid #e5e7eb' }}>Ajouter un compte réseau social</DialogTitle>
+        <DialogContent sx={{ bgcolor: '#fff' }}>
           <Box sx={{ mb: 2, mt: 1 }}>
             <FormControl fullWidth margin="dense">
               <InputLabel id="platform-select-label">Plateforme</InputLabel>
@@ -176,15 +176,15 @@ const AccountDialog = ({ open, onClose, account, onSave, onDelete }) => {
             />
           ))}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose} sx={{ color: '#6b7280' }}>Annuler</Button>
+        <DialogActions sx={{ bgcolor: '#fff', borderTop: '1px solid #e5e7eb' }}>
+          <Button onClick={onClose} sx={{ color: '#64748b', fontWeight: 600 }}>Annuler</Button>
           {account && account._id && (
-            <Button onClick={handleDelete} color="error" variant="outlined">Supprimer</Button>
+            <Button onClick={handleDelete} sx={{ color: '#ef4444', borderColor: '#ef4444', fontWeight: 600 }} variant="outlined">Supprimer</Button>
           )}
           <Button 
             type="submit"
             variant="contained" 
-            sx={{ bgcolor: '#6366f1', '&:hover': { bgcolor: '#4f46e5' } }}
+            sx={{ bgcolor: '#e5e7eb', color: '#18181b', fontWeight: 700, '&:hover': { bgcolor: '#f3f4f6' } }}
             disabled={!localAccount.platform || !localAccount.name || !localAccount.language}
           >
             {account && account._id ? 'Enregistrer' : 'Ajouter'}
@@ -192,16 +192,16 @@ const AccountDialog = ({ open, onClose, account, onSave, onDelete }) => {
         </DialogActions>
       </form>
       {/* Dialog de confirmation suppression */}
-      <Dialog open={confirmOpen} onClose={handleCancelDelete}>
-        <DialogTitle>Confirmer la suppression</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
+      <Dialog open={confirmOpen} onClose={handleCancelDelete} PaperProps={{ sx: { bgcolor: '#fff', borderRadius: 4 } }}>
+        <DialogTitle sx={{ color: '#18181b', fontWeight: 700 }}>Confirmer la suppression</DialogTitle>
+        <DialogContent sx={{ bgcolor: '#fff' }}>
+          <DialogContentText sx={{ color: '#64748b' }}>
             Voulez-vous vraiment supprimer ce compte ? Cette action est irréversible.
           </DialogContentText>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCancelDelete} color="inherit" variant="outlined">Annuler</Button>
-          <Button onClick={handleConfirmDelete} color="error" variant="contained">Supprimer</Button>
+        <DialogActions sx={{ bgcolor: '#fff', borderTop: '1px solid #e5e7eb' }}>
+          <Button onClick={handleCancelDelete} color="inherit" variant="outlined" sx={{ color: '#64748b', fontWeight: 600 }}>Annuler</Button>
+          <Button onClick={handleConfirmDelete} color="error" variant="contained" sx={{ fontWeight: 700 }}>Supprimer</Button>
         </DialogActions>
       </Dialog>
     </Dialog>

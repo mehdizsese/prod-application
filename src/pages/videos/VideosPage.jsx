@@ -136,45 +136,45 @@ const VideosPage = ({ videos, fetchAll }) => {
           sx={{ bgcolor: '#f3f4f6', borderRadius: 2, mb: 2 }}
         />
       </Box>
-      <TableContainer component={Paper} sx={{ bgcolor: '#1e293b', borderRadius: 4, boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)', overflow: 'hidden' }}>
+      <TableContainer component={Paper} sx={{ bgcolor: '#fff', border: '1px solid #e5e7eb', borderRadius: 4, boxShadow: '0 2px 12px 0 #f1f5f9', overflow: 'hidden' }}>
         <Table sx={{ minWidth: 650 }}>
-          <TableHead sx={{ bgcolor: '#0f172a' }}>
+          <TableHead sx={{ bgcolor: '#fff' }}>
             <TableRow>
-              <TableCell sx={{ color: '#94a3b8', fontWeight: 700, borderBottom: '1px solid #334155', py: 2 }}>
+              <TableCell sx={{ color: '#18181b', fontWeight: 700, borderBottom: '1px solid #e5e7eb', py: 2 }}>
                 <TableSortLabel
                   active={orderBy === 'title'}
                   direction={orderBy === 'title' ? order : 'asc'}
                   onClick={() => handleSort('title')}
-                  sx={{ '&.MuiTableSortLabel-root': { color: '#94a3b8' }, '&.MuiTableSortLabel-root:hover': { color: '#e2e8f0' }, '&.Mui-active': { color: '#3b82f6' }, '& .MuiTableSortLabel-icon': { color: '#3b82f6' } }}
+                  sx={{ '&.MuiTableSortLabel-root': { color: '#18181b' }, '&.MuiTableSortLabel-root:hover': { color: '#374151' }, '&.Mui-active': { color: '#111827' }, '& .MuiTableSortLabel-icon': { color: '#111827' } }}
                 >
                   Titre
                 </TableSortLabel>
               </TableCell>
-              <TableCell sx={{ color: '#94a3b8', fontWeight: 700, borderBottom: '1px solid #334155', py: 2 }}>Lien</TableCell>
-              <TableCell sx={{ color: '#94a3b8', fontWeight: 700, borderBottom: '1px solid #334155', py: 2 }}>Statut</TableCell>
-              <TableCell sx={{ color: '#94a3b8', fontWeight: 700, borderBottom: '1px solid #334155', py: 2 }}>Langues</TableCell>
-              <TableCell sx={{ color: '#94a3b8', fontWeight: 700, borderBottom: '1px solid #334155', py: 2 }}>Actions</TableCell>
+              <TableCell sx={{ color: '#18181b', fontWeight: 700, borderBottom: '1px solid #e5e7eb', py: 2 }}>Lien</TableCell>
+              <TableCell sx={{ color: '#18181b', fontWeight: 700, borderBottom: '1px solid #e5e7eb', py: 2 }}>Statut</TableCell>
+              <TableCell sx={{ color: '#18181b', fontWeight: 700, borderBottom: '1px solid #e5e7eb', py: 2 }}>Langues</TableCell>
+              <TableCell sx={{ color: '#18181b', fontWeight: 700, borderBottom: '1px solid #e5e7eb', py: 2 }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {paginatedVideos.length > 0 ? (
               paginatedVideos.map((video) => (
-                <TableRow key={video._id || video.title} sx={{ '&:hover': { bgcolor: '#0f172a' } }}>
-                  <TableCell sx={{ color: '#ffffff', fontWeight: 600, borderBottom: '1px solid #334155', py: 2.5 }}>{video.title}</TableCell>
-                  <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid #334155', py: 2.5 }}>
+                <TableRow key={video._id || video.title} sx={{ '&:hover': { bgcolor: '#f3f4f6' } }}>
+                  <TableCell sx={{ color: '#18181b', fontWeight: 600, borderBottom: '1px solid #e5e7eb', py: 2.5 }}>{video.title}</TableCell>
+                  <TableCell sx={{ color: '#64748b', borderBottom: '1px solid #e5e7eb', py: 2.5 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       <Typography variant="body2" sx={{ maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{video.link}</Typography>
                       <Tooltip title="Ouvrir le lien"><IconButton size="small" sx={{ ml: 1, color: '#64748b' }} href={video.link} target="_blank"><OpenInNewIcon sx={{ fontSize: 18 }} /></IconButton></Tooltip>
                     </Box>
                   </TableCell>
-                  <TableCell sx={{ borderBottom: '1px solid #334155', py: 2.5 }}>
+                  <TableCell sx={{ borderBottom: '1px solid #e5e7eb', py: 2.5 }}>
                     <Chip label={video.status} size="small" sx={{ bgcolor: statusColors[video.status]?.bg || '#334155', color: statusColors[video.status]?.color || '#e2e8f0', fontWeight: 700, textTransform: 'capitalize', fontSize: '0.85rem' }} />
                   </TableCell>
-                  <TableCell sx={{ borderBottom: '1px solid #334155', py: 2.5 }}>
+                  <TableCell sx={{ borderBottom: '1px solid #e5e7eb', py: 2.5 }}>
                     <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
                       {video.languages?.map(lang => (
                         <Tooltip key={lang.language} title={lang.language} arrow>
-                          <Chip label={lang.language.toUpperCase()} size="small" sx={{ bgcolor: '#334155', color: '#e2e8f0', mb: 1 }} />
+                          <Chip label={lang.language.toUpperCase()} size="small" sx={{ bgcolor: '#f3f4f6', color: '#18181b', mb: 1, fontWeight: 700 }} />
                         </Tooltip>
                       ))}
                       {!video.languages?.length && (
@@ -182,7 +182,7 @@ const VideosPage = ({ videos, fetchAll }) => {
                       )}
                     </Stack>
                   </TableCell>
-                  <TableCell sx={{ borderBottom: '1px solid #334155', py: 2.5 }}>
+                  <TableCell sx={{ borderBottom: '1px solid #e5e7eb', py: 2.5 }}>
                     <IconButton aria-label="more actions" size="small" sx={{ color: '#94a3b8' }} onClick={(e) => handleMenuOpen(e, video)}>
                       <MoreVertIcon />
                     </IconButton>
@@ -206,11 +206,11 @@ const VideosPage = ({ videos, fetchAll }) => {
           page={page}
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
-          sx={{ color: '#94a3b8', borderTop: '1px solid #334155', '.MuiTablePagination-toolbar': { px: 3 }, '.MuiTablePagination-select': { color: '#e2e8f0' }, '.MuiTablePagination-selectIcon': { color: '#94a3b8' }, '.MuiButtonBase-root': { color: '#3b82f6' } }}
+          sx={{ color: '#94a3b8', borderTop: '1px solid #e5e7eb', '.MuiTablePagination-toolbar': { px: 3 }, '.MuiTablePagination-select': { color: '#e2e8f0' }, '.MuiTablePagination-selectIcon': { color: '#94a3b8' }, '.MuiButtonBase-root': { color: '#3b82f6' } }}
         />
       </TableContainer>
       {/* Menu contextuel actions vidéo */}
-      <Menu anchorEl={anchorEl?.anchor} open={Boolean(anchorEl)} onClose={handleMenuClose} PaperProps={{ sx: { bgcolor: '#1e293b', color: '#e2e8f0', border: '1px solid #334155' } }}>
+      <Menu anchorEl={anchorEl?.anchor} open={Boolean(anchorEl)} onClose={handleMenuClose} PaperProps={{ sx: { bgcolor: '#fff', color: '#18181b', border: '1px solid #e5e7eb' } }}>
         <MenuItem onClick={handleEdit} sx={{ gap: 2 }}><EditIcon sx={{ fontSize: 18 }} /> Modifier</MenuItem>
         <MenuItem onClick={handleSubtitles} sx={{ gap: 2 }}><SubtitlesIcon sx={{ fontSize: 18 }} /> Gérer les sous-titres</MenuItem>
         <MenuItem onClick={handleDelete} sx={{ gap: 2, color: '#ef4444' }}><DeleteIcon sx={{ fontSize: 18 }} /> Supprimer</MenuItem>
