@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, 
   TableHead, TableRow, Chip, IconButton, Stack, Tooltip, Menu, MenuItem, 
@@ -29,8 +30,12 @@ const statusColors = {
   splitted: { bg: '#92400e', color: '#fde68a' },
   processing: { bg: '#1e40af', color: '#dbeafe' },
   published: { bg: '#4c1d95', color: '#ede9fe' },
-  new: { bg: '#334155', color: '#e2e8f0' }
+  new: { bg: '#334155', color: '#e2e8f0' },
+  pending: { bg: '#4b5563', color: '#f9fafb' },
+  generated: { bg: '#0369a1', color: '#e0f2fe' }
 };
+
+// Fonction supprimée car non utilisée dans le composant
 
 const VideosPage = ({ videos, fetchAll }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -98,12 +103,14 @@ const VideosPage = ({ videos, fetchAll }) => {
 
   console.log('VIDEOS PAGE - vidéos reçues :', videos);
 
-  // Adapté à la nouvelle structure
+  // Filtrage adapté au nouveau modèle de données
   const filteredVideos = videos.filter(video =>
     video.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     video.link?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     video.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (video.languages && video.languages.some(lang => lang.language?.toLowerCase().includes(searchTerm.toLowerCase())))
+    (video.languages && Array.isArray(video.languages) && video.languages.some(lang => 
+      lang.language?.toLowerCase().includes(searchTerm.toLowerCase())
+    ))
   );
 
   const sortedVideos = filteredVideos.sort((a, b) => {
@@ -152,7 +159,7 @@ const VideosPage = ({ videos, fetchAll }) => {
               </TableCell>
               <TableCell sx={{ color: '#18181b', fontWeight: 700, borderBottom: '1px solid #e5e7eb', py: 2 }}>Lien</TableCell>
               <TableCell sx={{ color: '#18181b', fontWeight: 700, borderBottom: '1px solid #e5e7eb', py: 2 }}>Statut</TableCell>
-              <TableCell sx={{ color: '#18181b', fontWeight: 700, borderBottom: '1px solid #e5e7eb', py: 2 }}>Langues</TableCell>
+              <TableCell sx={{ color: '#18181b', fontWeight: 700, borderBottom: '1px solid #e5e7eb', py: 2 }}>Langues et Sous-titres</TableCell>
               <TableCell sx={{ color: '#18181b', fontWeight: 700, borderBottom: '1px solid #e5e7eb', py: 2 }}>Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -160,7 +167,22 @@ const VideosPage = ({ videos, fetchAll }) => {
             {paginatedVideos.length > 0 ? (
               paginatedVideos.map((video) => (
                 <TableRow key={video._id || video.title} sx={{ '&:hover': { bgcolor: '#f3f4f6' } }}>
-                  <TableCell sx={{ color: '#18181b', fontWeight: 600, borderBottom: '1px solid #e5e7eb', py: 2.5 }}>{video.title}</TableCell>
+                  <TableCell sx={{ color: '#18181b', fontWeight: 600, borderBottom: '1px solid #e5e7eb', py: 2.5 }}>
+                    <Button 
+                      component={Link}
+                      to={`/videos/${video._id}`}
+                      sx={{ 
+                        textTransform: 'none', 
+                        color: '#18181b', 
+                        fontWeight: 600,
+                        textAlign: 'left',
+                        justifyContent: 'flex-start',
+                        '&:hover': { color: '#3b82f6' }
+                      }}
+                    >
+                      {video.title}
+                    </Button>
+                  </TableCell>
                   <TableCell sx={{ color: '#64748b', borderBottom: '1px solid #e5e7eb', py: 2.5 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       <Typography variant="body2" sx={{ maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{video.link}</Typography>
@@ -171,13 +193,28 @@ const VideosPage = ({ videos, fetchAll }) => {
                     <Chip label={video.status} size="small" sx={{ bgcolor: statusColors[video.status]?.bg || '#334155', color: statusColors[video.status]?.color || '#e2e8f0', fontWeight: 700, textTransform: 'capitalize', fontSize: '0.85rem' }} />
                   </TableCell>
                   <TableCell sx={{ borderBottom: '1px solid #e5e7eb', py: 2.5 }}>
-                    <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-                      {video.languages?.map(lang => (
-                        <Tooltip key={lang.language} title={lang.language} arrow>
-                          <Chip label={lang.language.toUpperCase()} size="small" sx={{ bgcolor: '#f3f4f6', color: '#18181b', mb: 1, fontWeight: 700 }} />
-                        </Tooltip>
-                      ))}
-                      {!video.languages?.length && (
+                    <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+                      {video.languages && Array.isArray(video.languages) && video.languages.length > 0 ? (
+                        video.languages.map(lang => {
+                          const segmentCount = lang.items?.length || 0;
+                          return (
+                            <Tooltip key={lang.language} title={`${lang.language} (${segmentCount} segments)`} arrow>
+                              <Chip 
+                                label={`${lang.language.toUpperCase()} (${segmentCount})`} 
+                                size="small" 
+                                sx={{ 
+                                  bgcolor: '#f3f4f6', 
+                                  color: '#18181b', 
+                                  mb: 1, 
+                                  fontWeight: 700,
+                                  border: '1px solid #e5e7eb'
+                                }}
+                                icon={<SubtitlesIcon sx={{ fontSize: '0.9rem' }} />}
+                              />
+                            </Tooltip>
+                          );
+                        })
+                      ) : (
                         <Typography variant="body2" color="#64748b" fontStyle="italic">Aucune langue</Typography>
                       )}
                     </Stack>
@@ -206,14 +243,14 @@ const VideosPage = ({ videos, fetchAll }) => {
           page={page}
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
-          sx={{ color: '#94a3b8', borderTop: '1px solid #e5e7eb', '.MuiTablePagination-toolbar': { px: 3 }, '.MuiTablePagination-select': { color: '#e2e8f0' }, '.MuiTablePagination-selectIcon': { color: '#94a3b8' }, '.MuiButtonBase-root': { color: '#3b82f6' } }}
+          sx={{ color: '#94a3b8', borderTop: '1px solid #e5e7eb', '.MuiTablePagination-toolbar': { px: 3 }, '.MuiTablePagination-select': { color: '#18181b' }, '.MuiTablePagination-selectIcon': { color: '#94a3b8' }, '.MuiButtonBase-root': { color: '#3b82f6' } }}
         />
       </TableContainer>
       {/* Menu contextuel actions vidéo */}
       <Menu anchorEl={anchorEl?.anchor} open={Boolean(anchorEl)} onClose={handleMenuClose} PaperProps={{ sx: { bgcolor: '#fff', color: '#18181b', border: '1px solid #e5e7eb' } }}>
         <MenuItem onClick={handleEdit} sx={{ gap: 2 }}><EditIcon sx={{ fontSize: 18 }} /> Modifier</MenuItem>
         <MenuItem onClick={handleSubtitles} sx={{ gap: 2 }}><SubtitlesIcon sx={{ fontSize: 18 }} /> Gérer les sous-titres</MenuItem>
-        <MenuItem onClick={handleDelete} sx={{ gap: 2, color: '#ef4444' }}><DeleteIcon sx={{ fontSize: 18 }} /> Supprimer</MenuItem>
+        <MenuItem onClick={handleConfirmDelete} sx={{ gap: 2, color: '#ef4444' }}><DeleteIcon sx={{ fontSize: 18 }} /> Supprimer</MenuItem>
       </Menu>
       {/* Dialog de confirmation suppression vidéo */}
       <Dialog open={confirmDeleteOpen} onClose={() => setConfirmDeleteOpen(false)}>
@@ -225,7 +262,7 @@ const VideosPage = ({ videos, fetchAll }) => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirmDeleteOpen(false)} color="inherit" variant="outlined">Annuler</Button>
-          <Button onClick={handleConfirmDelete} color="error" variant="contained">Supprimer</Button>
+          <Button onClick={handleDelete} color="error" variant="contained">Supprimer</Button>
         </DialogActions>
       </Dialog>
       {/* Dialog édition vidéo */}
@@ -234,7 +271,7 @@ const VideosPage = ({ videos, fetchAll }) => {
       )}
       {/* Dialog sous-titres */}
       {openSubtitles && (
-        <SubtitlesDialog open={openSubtitles} onClose={() => setOpenSubtitles(false)} video={selectedVideo} onSave={() => setOpenSubtitles(false)} />
+        <SubtitlesDialog open={openSubtitles} onClose={() => setOpenSubtitles(false)} video={selectedVideo} onSave={fetchAll} />
       )}
     </Box>
   );

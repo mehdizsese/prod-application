@@ -20,7 +20,10 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  DialogContentText
+  DialogContentText,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -28,6 +31,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import TranslateIcon from '@mui/icons-material/Translate';
 import Snackbar from '@mui/material/Snackbar';
 import TablePagination from '@mui/material/TablePagination';
 
@@ -39,7 +44,7 @@ const formatTime = (timeInSeconds) => {
   return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
 };
 
-// Nouvelle fonction robuste pour parser le temps (accepte HH:MM:SS,mmm ou MM:SS.mmm ou nombre)
+// Fonction robuste pour parser le temps (accepte HH:MM:SS,mmm ou MM:SS.mmm ou nombre)
 function parseAnyTime(val) {
   if (typeof val === 'number') return val;
   if (!val) return 0;
@@ -76,25 +81,45 @@ function parseSRT(srtText, language) {
     subtitles.push({
       startTime: parseAnyTime(start),
       endTime: parseAnyTime(end),
-      text: textLines.join(' '),
-      language: language
+      text: textLines.join(' ')
     });
   }
   return subtitles;
 }
 
+// Liste des langues disponibles
+const LANGUAGES = [
+  { value: 'fr', label: 'Français' },
+  { value: 'en', label: 'Anglais' },
+  { value: 'es', label: 'Espagnol' },
+  { value: 'de', label: 'Allemand' },
+  { value: 'it', label: 'Italien' },
+  { value: 'pt', label: 'Portugais' },
+  { value: 'ar', label: 'Arabe' },
+  { value: 'zh', label: 'Chinois' }
+];
+
 const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
-  const [activeTab, setActiveTab] = useState(0);
-  const [originalSubtitles, setOriginalSubtitles] = useState(video?.original_subtitles || []);
-  const [newSubtitles, setNewSubtitles] = useState(video?.new_subtitles || []);
+  // État des langues disponibles pour cette vidéo
+  const [languages, setLanguages] = useState(video?.languages || []);
+  
+  // État actif
+  const [activeLanguage, setActiveLanguage] = useState('');
+  const [editingSegment, setEditingSegment] = useState(null);
+  const [editSegmentIndex, setEditSegmentIndex] = useState(-1);
   const [editingSubtitle, setEditingSubtitle] = useState(null);
-  const [editIndex, setEditIndex] = useState(-1);
-  const [language, setLanguage] = useState('fr');
+  const [editSubtitleIndex, setEditSubtitleIndex] = useState(-1);
+  
+  // État pour l'interface
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmData, setConfirmData] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '' });
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
+  
+  // État pour l'ajout de nouvelle langue
+  const [newLanguage, setNewLanguage] = useState('');
 
   // Reset state when dialog opens
   useEffect(() => {

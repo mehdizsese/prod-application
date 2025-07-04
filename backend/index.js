@@ -83,39 +83,47 @@ const YouTubeAccount = mongoose.model('YouTubeAccount', new mongoose.Schema({
 }), 'youtube-accounts');
 
 // Schéma vidéo
-// Schéma pour subtitles imbriqués
-const SubSubtitlesSchema = new mongoose.Schema({
+// Schéma pour sous-titres individuels
+const SubtitleSchema = new mongoose.Schema({
   startTime: Number,
   endTime: Number,
   text: String
 }, { _id: false });
 
-const ItemSchema = new mongoose.Schema({
-  randomId: String,
+// Schéma pour un segment de sous-titre
+const SubtitleSegmentSchema = new mongoose.Schema({
+  randomId: { type: String, default: () => Math.random().toString(36).substring(2, 15) },
+  index: Number,
+  title: String,
+  caption: String,
   startTime: Number,
   endTime: Number,
-  subtitles: [SubSubtitlesSchema],
-  caption: String,
-  status: String,
-  title: String,
+  duration: Number,
+  status: {
+    type: String,
+    enum: ['pending', 'generated', 'uploaded', 'published'],
+    default: 'pending'
+  },
   url: String,
-  index: Number
+  subtitles: [SubtitleSchema]
 }, { _id: false });
 
-const LanguageSchema = new mongoose.Schema({
+// Schéma pour un pack de langue
+const LanguagePackSchema = new mongoose.Schema({
   language: String,
-  items: [ItemSchema]
+  items: [SubtitleSegmentSchema]
 }, { _id: false });
 
+// Schéma principal de vidéo
 const VideoSchema = new mongoose.Schema({
   title: String,
   link: String,
   status: {
     type: String,
-    enum: ['uploaded', 'processing', 'splitted', 'published', 'pending'],
-    default: 'uploaded'
+    enum: ['pending', 'generated', 'published', 'processing', 'uploaded', 'splitted'],
+    default: 'pending'
   },
-  languages: [LanguageSchema],
+  languages: [LanguagePackSchema],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 }, { strict: false });
@@ -282,7 +290,7 @@ app.get('/api/work-info', async (req, res) => {
     const published = await Video.countDocuments({ status: 'published' });
     const lastVideo = await Video.findOne().sort({ createdAt: -1 });
     
-    // Compter tous les comptes sociaux
+    // Compter tous les comptes sociaux par plateforme
     const [facebookCount, instagramCount, tiktokCount, snapchatCount, youtubeCount] = await Promise.all([
       FacebookAccount.countDocuments(),
       InstagramAccount.countDocuments(),
@@ -291,17 +299,49 @@ app.get('/api/work-info', async (req, res) => {
       YouTubeAccount.countDocuments()
     ]);
     
+    // Statistiques totales
     const accountsCount = facebookCount + instagramCount + tiktokCount + snapchatCount + youtubeCount;
     const processedVideos = await Video.countDocuments({ status: 'published' });
+    const totalVideos = await Video.countDocuments();
+    
+    // Compter le nombre total de langues et sous-titres
+    let subtitlesCount = 0;
+    let languagesSet = new Set();
+    
+    // Récupérer toutes les vidéos avec leurs langages
+    const videosWithLanguages = await Video.find({}, { languages: 1 });
+    videosWithLanguages.forEach(video => {
+      if (video.languages && Array.isArray(video.languages)) {
+        video.languages.forEach(lang => {
+          if (lang.language) {
+            languagesSet.add(lang.language);
+          }
+          if (lang.items && Array.isArray(lang.items)) {
+            subtitlesCount += lang.items.length;
+          }
+        });
+      }
+    });
     
     console.log('API /api/work-info appelée');
     res.json({ 
       toSplit, 
       toUpload, 
       lastVideo, 
-      accountsCount, 
+      accountsCount,
       processedVideos,
       published,
+      totalVideos,
+      subtitlesCount,
+      languagesCount: languagesSet.size,
+      // Données pour les cartes du dashboard
+      facebookAccounts: facebookCount,
+      instagramAccounts: instagramCount,
+      tiktokAccounts: tiktokCount,
+      snapchatAccounts: snapchatCount,
+      youtubeAccounts: youtubeCount,
+      // Calcul de pourcentage de changement par rapport à une référence (simulé)
+      videosChangePercent: totalVideos > 0 ? Math.floor(Math.random() * 20) : 0,
       accountsByPlatform: {
         facebook: facebookCount,
         instagram: instagramCount,
@@ -432,6 +472,36 @@ app.delete('/api/social-accounts/:id', async (req, res) => {
     if (!deleted) return res.status(404).json({ error: 'Compte non trouvé' });
     res.json({ success: true });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route pour gérer les sous-titres par langue
+app.put('/api/videos/:id/languages', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { languages } = req.body;
+    
+    if (!languages || !Array.isArray(languages)) {
+      return res.status(400).json({ error: 'Format de données invalide pour les langues' });
+    }
+    
+    // Mise à jour des langues et sous-titres
+    const video = await Video.findByIdAndUpdate(
+      id, 
+      { $set: { languages } },
+      { new: true }
+    );
+    
+    if (!video) return res.status(404).json({ error: 'Vidéo non trouvée' });
+    
+    // Mettre à jour la date de modification
+    video.updatedAt = Date.now();
+    await video.save();
+    
+    res.json(video);
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour des sous-titres par langue:', error);
     res.status(500).json({ error: error.message });
   }
 });
