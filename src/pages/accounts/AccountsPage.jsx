@@ -44,13 +44,13 @@ const AccountsPage = ({ accounts, fetchAll }) => {
   };
 
   return (
-    <Box sx={{ width: '100%', minHeight: '100%', height: '100%', bgcolor: '#0f172a', p: { xs: 3, md: 4, lg: 6 }, overflowY: 'auto' }}>
+    <Box sx={{ width: '100%', minHeight: '100%', height: '100%', bgcolor: '#fff', p: { xs: 3, md: 4, lg: 6 }, overflowY: 'auto' }}>
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight={700} color="#ffffff" mb={2}>
-          Social Accounts
+        <Typography variant="h4" fontWeight={800} color="#18181b" mb={2} letterSpacing={1}>
+          Comptes réseaux sociaux
         </Typography>
-        <Typography variant="body1" color="#94a3b8">
-          Manage your connected social media platforms
+        <Typography variant="body1" color="#64748b" mb={4}>
+          Gérez vos comptes connectés à vos plateformes sociales
         </Typography>
       </Box>
       

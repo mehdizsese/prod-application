@@ -119,12 +119,12 @@ const VideosPage = ({ videos, fetchAll }) => {
   const paginatedVideos = sortedVideos.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   return (
-    <Box sx={{ width: '100%', minHeight: '100%', height: '100%', bgcolor: '#0f172a', p: { xs: 3, md: 4, lg: 6 }, overflowY: 'auto' }}>
+    <Box sx={{ width: '100%', minHeight: '100%', height: '100%', bgcolor: '#fff', p: { xs: 3, md: 4, lg: 6 }, overflowY: 'auto' }}>
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight={700} color="#ffffff" mb={2}>
+        <Typography variant="h4" fontWeight={800} color="#18181b" mb={2} letterSpacing={1}>
           Bibliothèque de vidéos
         </Typography>
-        <Typography variant="body1" color="#94a3b8" mb={4}>
+        <Typography variant="body1" color="#64748b" mb={4}>
           Gestion et suivi de vos vidéos sur différentes plateformes
         </Typography>
         <TextField
@@ -133,8 +133,7 @@ const VideosPage = ({ videos, fetchAll }) => {
           fullWidth
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ mb: 4, '& .MuiOutlinedInput-root': { bgcolor: '#1e293b', borderRadius: 3, '& fieldset': { borderColor: '#334155' }, '&:hover fieldset': { borderColor: '#475569' }, '&.Mui-focused fieldset': { borderColor: '#3b82f6' } }, '& .MuiOutlinedInput-input': { color: '#e2e8f0', py: 1.5, px: 2 } }}
-          InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon sx={{ color: '#64748b' }} /></InputAdornment>) }}
+          sx={{ bgcolor: '#f3f4f6', borderRadius: 2, mb: 2 }}
         />
       </Box>
       <TableContainer component={Paper} sx={{ bgcolor: '#1e293b', borderRadius: 4, boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)', overflow: 'hidden' }}>

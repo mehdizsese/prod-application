@@ -11,7 +11,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import VideosPage from './pages/videos/VideosPage';
 import AccountsPage from './pages/accounts/AccountsPage';
 import SettingsPage from './pages/settings/SettingsPage';
-import InsightsPage from './pages/insights/InsightsPage';
+import DashboardPage from './pages/insights/InsightsPage'; // renommé
 import LoginPage from './pages/LoginPage';
 
 // Importation des composants de dialogue
@@ -21,7 +21,7 @@ import AccountDialog from './components/AccountDialog';
 const drawerWidth = 240;
 
 const TABS = [
-  { label: 'Insights', icon: <InsightsIcon /> },
+  { label: 'Dashboard', icon: <InsightsIcon /> },
   { label: 'Vidéos', icon: <VideoLibraryIcon /> },
   { label: 'Comptes', icon: <AccountCircleIcon /> },
   { label: 'Paramètres', icon: <SettingsIcon /> },
@@ -122,7 +122,7 @@ function App() {
 
     switch (tab) {
       case 0:
-        return <InsightsPage info={workInfo} />;
+        return <DashboardPage info={workInfo} />;
       case 1:
         return <VideosPage videos={videos} />;
       case 2:
@@ -130,7 +130,7 @@ function App() {
       case 3:
         return <SettingsPage />;
       default:
-        return <InsightsPage info={workInfo} />;
+        return <DashboardPage info={workInfo} />;
     }
   };
 
@@ -151,9 +151,9 @@ function App() {
       right: 0,
       overflow: 'hidden' 
     }}>
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: '#f8fafc', boxShadow: 'none', borderBottom: '1px solid #e5e7eb' }}>
+      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: '#fff', boxShadow: '0 2px 8px 0 #f1f5f9', borderBottom: '1px solid #e5e7eb' }}>
         <Toolbar sx={{ px: 4, minHeight: 64 }}>
-          <Typography variant="h5" noWrap sx={{ flexGrow: 0, color: '#0f172a', fontWeight: 800, mr: 4 }}>Social Video Manager</Typography>
+          <Typography variant="h5" noWrap sx={{ flexGrow: 0, color: '#22223b', fontWeight: 800, mr: 4, letterSpacing: 1 }}>Social Video Manager</Typography>
           {/* Navigation principale sous forme de Tabs horizontaux */}
           <Box sx={{ flexGrow: 1 }}>
             <Box sx={{ display: 'flex', gap: 2 }}>
@@ -163,8 +163,8 @@ function App() {
                   onClick={() => setTab(idx)}
                   startIcon={tabItem.icon}
                   sx={{
-                    color: tab === idx ? '#2563eb' : '#334155',
-                    bgcolor: tab === idx ? '#e0e7ef' : 'transparent',
+                    color: tab === idx ? '#18181b' : '#64748b',
+                    bgcolor: tab === idx ? '#f3f4f6' : 'transparent',
                     fontWeight: tab === idx ? 700 : 600,
                     borderRadius: 3,
                     px: 3,
@@ -172,7 +172,7 @@ function App() {
                     fontSize: '1rem',
                     textTransform: 'none',
                     boxShadow: 'none',
-                    '&:hover': { bgcolor: '#f1f5f9', color: '#1e293b' }
+                    '&:hover': { bgcolor: '#f1f5f9', color: '#18181b' }
                   }}
                 >
                   {tabItem.label}
@@ -181,19 +181,18 @@ function App() {
             </Box>
           </Box>
           {token && (
-            <Button onClick={() => setToken('')} sx={{ ml: 2, bgcolor: '#e5e7eb', color: '#0f172a', borderRadius: 3, px: 3, py: 1, fontWeight: 600, textTransform: 'none', '&:hover': { bgcolor: '#f87171', color: '#fff' } }}>
+            <Button onClick={() => setToken('')} sx={{ ml: 2, bgcolor: '#f3f4f6', color: '#18181b', borderRadius: 3, px: 3, py: 1, fontWeight: 600, textTransform: 'none', '&:hover': { bgcolor: '#f87171', color: '#fff' } }}>
               Se déconnecter
             </Button>
           )}
           {tab === 1 && (
-            <Button variant="contained" sx={{ bgcolor: '#2563eb', color: 'white', textTransform: 'none', fontWeight: 600, borderRadius: 3, px: 4, py: 1.5, ml: 2 }} startIcon={<AddIcon />} onClick={() => setOpenAddVideo(true)}>Ajouter une vidéo</Button>
+            <Button variant="contained" sx={{ bgcolor: '#e5e7eb', color: '#18181b', textTransform: 'none', fontWeight: 600, borderRadius: 3, px: 4, py: 1.5, ml: 2, boxShadow: 'none', '&:hover': { bgcolor: '#f1f5f9' } }} startIcon={<AddIcon />} onClick={() => setOpenAddVideo(true)}>Ajouter une vidéo</Button>
           )}
           {tab === 2 && (
-            <Button variant="contained" sx={{ bgcolor: '#2563eb', color: 'white', textTransform: 'none', fontWeight: 600, borderRadius: 3, px: 4, py: 1.5, ml: 2 }} startIcon={<AddIcon />} onClick={() => setOpenAddAccount(true)}>Ajouter un compte</Button>
+            <Button variant="contained" sx={{ bgcolor: '#e5e7eb', color: '#18181b', textTransform: 'none', fontWeight: 600, borderRadius: 3, px: 4, py: 1.5, ml: 2, boxShadow: 'none', '&:hover': { bgcolor: '#f1f5f9' } }} startIcon={<AddIcon />} onClick={() => setOpenAddAccount(true)}>Ajouter un compte</Button>
           )}
         </Toolbar>
       </AppBar>
-      {/* Plus de Drawer/sidebar */}
       <Box component="main" sx={{ 
         flexGrow: 1, 
         bgcolor: '#fff', 
