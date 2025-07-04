@@ -75,7 +75,7 @@ function parseSRT(srtText, language) {
     // Ignore l'index (première ligne)
     const timeLine = lines[1].includes('-->') ? lines[1] : lines[0];
     const textLines = lines[1].includes('-->') ? lines.slice(2) : lines.slice(1);
-    const match = timeLine.match(/(\d{2}:\d{2}:\d{2},\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2},\d{3})/);
+    const match = timeLine.match(/(\d{2}:\d{2}:\d{2},\d{3})\s*-->\s*(\d{2}:\d{2}:\d{3},\d{3})/);
     if (!match) continue;
     const [ , start, end ] = match;
     subtitles.push({
@@ -103,23 +103,24 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
   // État des langues disponibles pour cette vidéo
   const [languages, setLanguages] = useState(video?.languages || []);
   
+  // État des sous-titres
+  const [originalSubtitles, setOriginalSubtitles] = useState(video?.original_subtitles || []);
+  const [newSubtitles, setNewSubtitles] = useState(video?.new_subtitles || []);
+  const [activeTab, setActiveTab] = useState(0);
+  
   // État actif
-  const [activeLanguage, setActiveLanguage] = useState('');
-  const [editingSegment, setEditingSegment] = useState(null);
-  const [editSegmentIndex, setEditSegmentIndex] = useState(-1);
+  const [activeLanguage, setActiveLanguage] = useState('fr'); // langue par défaut
   const [editingSubtitle, setEditingSubtitle] = useState(null);
-  const [editSubtitleIndex, setEditSubtitleIndex] = useState(-1);
+  const [editIndex, setEditIndex] = useState(-1);
   
   // État pour l'interface
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmAction, setConfirmAction] = useState(null);
-  const [confirmData, setConfirmData] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '' });
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   
-  // État pour l'ajout de nouvelle langue
-  const [newLanguage, setNewLanguage] = useState('');
+  // Variable pour la gestion de la suppression
+  const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -130,19 +131,25 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
       setEditIndex(-1);
       setActiveTab(0);
       setPage(0);
+      
+      // Définir la langue active par défaut
+      if (video.languages && video.languages.length > 0) {
+        setActiveLanguage(video.languages[0].language || 'fr');
+      } else {
+        setActiveLanguage('fr');
+      }
     }
   }, [open, video]);
-
+  
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
   };
-
   const startEditSubtitle = (subtitle, index) => {
     setEditingSubtitle({
       startTime: typeof subtitle.startTime === 'number' && !isNaN(subtitle.startTime) ? subtitle.startTime : 0,
       endTime: typeof subtitle.endTime === 'number' && !isNaN(subtitle.endTime) ? subtitle.endTime : 0,
-      text: subtitle.text,
-      language: subtitle.language || language
+      text: subtitle.text || '',
+      language: subtitle.language || activeLanguage
     });
     setEditIndex(index);
   };
@@ -151,7 +158,6 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
     setEditingSubtitle(null);
     setEditIndex(-1);
   };
-
   const saveEdit = () => {
     const currentSubtitles = activeTab === 0 ? originalSubtitles : newSubtitles;
     const updatedSubtitles = [...currentSubtitles];
@@ -160,13 +166,13 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
       // Ajout d'un nouveau sous-titre
       updatedSubtitles.push({
         ...editingSubtitle,
-        language: editingSubtitle.language || language
+        language: editingSubtitle.language || activeLanguage
       });
     } else {
       // Mise à jour d'un sous-titre existant
       updatedSubtitles[editIndex] = {
         ...editingSubtitle,
-        language: editingSubtitle.language || language
+        language: editingSubtitle.language || activeLanguage
       };
     }
     
@@ -199,18 +205,9 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
     setConfirmOpen(false);
     setPendingDeleteIndex(null);
   };
-
   const handleCancelDelete = () => {
     setConfirmOpen(false);
     setPendingDeleteIndex(null);
-  };
-
-  const deleteSubtitle = (index) => {
-    if (activeTab === 0) {
-      setOriginalSubtitles(originalSubtitles.filter((_, i) => i !== index));
-    } else {
-      setNewSubtitles(newSubtitles.filter((_, i) => i !== index));
-    }
   };
 
   const handleChange = (field, value) => {
@@ -218,7 +215,6 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
   };
 
   const getToken = () => localStorage.getItem('token') || '';
-
   const handleSaveAll = async () => {
     if (!video?._id) return;
     const type = activeTab === 0 ? 'original_subtitles' : 'new_subtitles';
@@ -235,7 +231,8 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
       if (!res.ok) throw new Error('Erreur lors de la sauvegarde');
       setSnackbar({ open: true, message: 'Sous-titres enregistrés !' });
       onSave && onSave();
-    } catch (e) {
+    } catch (error) {
+      console.error("Erreur lors de la sauvegarde des sous-titres:", error);
       setSnackbar({ open: true, message: 'Erreur lors de la sauvegarde' });
     }
     onClose();
@@ -244,13 +241,12 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
   const handleTimeChange = (field, value) => {
     handleChange(field, parseAnyTime(value));
   };
-
   const addNewSubtitle = () => {
     setEditingSubtitle({
       startTime: 0,
       endTime: 0,
       text: '',
-      language
+      language: activeLanguage
     });
     setEditIndex(-1);
   };
@@ -270,19 +266,17 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
               const st = parseAnyTime(s.startTime);
               const et = parseAnyTime(s.endTime);
               if (isNaN(st) || isNaN(et)) return null;
-              return {
-                startTime: st,
+              return {                startTime: st,
                 endTime: et,
                 text: s.title || s.text || '',
                 durationSeconds: s.durationSeconds,
-                language: s.language || language
+                language: s.language || activeLanguage
               };
             }).filter(Boolean);
             if (activeTab === 0) setOriginalSubtitles(mapped);
             else setNewSubtitles(mapped);
-          }
-        } else if (ext === 'srt') {
-          const parsed = parseSRT(e.target.result, language);
+          }        } else if (ext === 'srt') {
+          const parsed = parseSRT(e.target.result, activeLanguage);
           if (activeTab === 0) setOriginalSubtitles(parsed);
           else setNewSubtitles(parsed);
         } else {
@@ -344,9 +338,8 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
                 size="small"
               />
               <FormControl fullWidth size="small">
-                <InputLabel>Langue</InputLabel>
-                <Select
-                  value={editingSubtitle.language || language}
+                <InputLabel>Langue</InputLabel>                <Select
+                  value={editingSubtitle.language || activeLanguage}
                   label="Langue"
                   onChange={(e) => handleChange('language', e.target.value)}
                 >
