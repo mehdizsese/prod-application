@@ -23,7 +23,13 @@ import {
   DialogContentText,
   Accordion,
   AccordionSummary,
-  AccordionDetails
+  AccordionDetails,
+  Card,
+  CardContent,
+  CardActions,
+  Grid,
+  Tooltip,
+  Chip
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -33,8 +39,12 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import TranslateIcon from '@mui/icons-material/Translate';
+import VideocamIcon from '@mui/icons-material/Videocam';
+import SubtitlesIcon from '@mui/icons-material/Subtitles';
+import LanguageIcon from '@mui/icons-material/Language';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Snackbar from '@mui/material/Snackbar';
-import TablePagination from '@mui/material/TablePagination';
 
 // Fonction utilitaire pour formater le temps en secondes vers format MM:SS.mmm
 const formatTime = (timeInSeconds) => {
@@ -65,28 +75,6 @@ function parseAnyTime(val) {
   return isNaN(n) ? 0 : n;
 }
 
-// Fonction pour parser un fichier SRT en objets sous-titres
-function parseSRT(srtText, language) {
-  const blocks = srtText.split(/\r?\n\r?\n/);
-  const subtitles = [];
-  for (const block of blocks) {
-    const lines = block.split(/\r?\n/).filter(Boolean);
-    if (lines.length < 2) continue;
-    // Ignore l'index (première ligne)
-    const timeLine = lines[1].includes('-->') ? lines[1] : lines[0];
-    const textLines = lines[1].includes('-->') ? lines.slice(2) : lines.slice(1);
-    const match = timeLine.match(/(\d{2}:\d{2}:\d{2},\d{3})\s*-->\s*(\d{2}:\d{2}:\d{3},\d{3})/);
-    if (!match) continue;
-    const [ , start, end ] = match;
-    subtitles.push({
-      startTime: parseAnyTime(start),
-      endTime: parseAnyTime(end),
-      text: textLines.join(' ')
-    });
-  }
-  return subtitles;
-}
-
 // Liste des langues disponibles
 const LANGUAGES = [
   { value: 'fr', label: 'Français' },
@@ -99,400 +87,891 @@ const LANGUAGES = [
   { value: 'zh', label: 'Chinois' }
 ];
 
+// Générer un ID aléatoire
+const generateRandomId = () => {
+  return Math.random().toString(36).substring(2, 12);
+};
+
 const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
-  // État des langues disponibles pour cette vidéo
+  // Mode de vue (0 = langues/segments, 1 = sous-titres originaux, 2 = sous-titres modifiés)
+  const [viewMode, setViewMode] = useState(0);
+  
+  // État des langues et segments
   const [languages, setLanguages] = useState(video?.languages || []);
+  const [activeLanguageIndex, setActiveLanguageIndex] = useState(0);
   
   // État des sous-titres
   const [originalSubtitles, setOriginalSubtitles] = useState(video?.original_subtitles || []);
   const [newSubtitles, setNewSubtitles] = useState(video?.new_subtitles || []);
-  const [activeTab, setActiveTab] = useState(0);
   
-  // État actif
-  const [activeLanguage, setActiveLanguage] = useState('fr'); // langue par défaut
+  // État d'édition
+  const [editingSegment, setEditingSegment] = useState(null);
   const [editingSubtitle, setEditingSubtitle] = useState(null);
-  const [editIndex, setEditIndex] = useState(-1);
-  
-  // État pour l'interface
+  const [editingIndex, setEditingIndex] = useState(-1);
+  const [selectedSegment, setSelectedSegment] = useState(null);
+    // État pour l'interface
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmData, setConfirmData] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '' });
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(50);
   
-  // Variable pour la gestion de la suppression
-  const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
-
+  // État pour l'ajout de nouvelle langue
+  const [newLanguageCode, setNewLanguageCode] = useState('');
   // Reset state when dialog opens
   useEffect(() => {
     if (open && video) {
+      setLanguages(video.languages || []);
       setOriginalSubtitles(video.original_subtitles || []);
       setNewSubtitles(video.new_subtitles || []);
-      setEditingSubtitle(null);
-      setEditIndex(-1);
-      setActiveTab(0);
-      setPage(0);
-      
-      // Définir la langue active par défaut
-      if (video.languages && video.languages.length > 0) {
-        setActiveLanguage(video.languages[0].language || 'fr');
-      } else {
-        setActiveLanguage('fr');
-      }
+      setViewMode(0);
+      setActiveLanguageIndex(0);
+      resetEditingStates();
     }
   }, [open, video]);
-  
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
+
+  // Réinitialisation des états d'édition
+  const resetEditingStates = () => {
+    setEditingSegment(null);
+    setEditingSubtitle(null);
+    setEditingIndex(-1);
+    setSelectedSegment(null);
   };
-  const startEditSubtitle = (subtitle, index) => {
+
+  // Gestionnaire pour le changement de mode de vue
+  const handleViewModeChange = (event, newValue) => {
+    resetEditingStates();
+    setViewMode(newValue);
+  };
+
+  // Gestion de l'ajout d'une nouvelle langue
+  const handleAddLanguage = () => {
+    if (!newLanguageCode) return;
+    
+    const languageExists = languages.some(l => l.language === newLanguageCode);
+    if (languageExists) {
+      setSnackbar({ open: true, message: 'Cette langue existe déjà' });
+      return;
+    }
+    
+    const newLang = {
+      language: newLanguageCode,
+      items: []
+    };
+    
+    setLanguages([...languages, newLang]);
+    setActiveLanguageIndex(languages.length);
+    setNewLanguageCode('');
+    setSnackbar({ open: true, message: 'Langue ajoutée avec succès' });
+  };
+
+  // Gestion de la suppression d'une langue
+  const handleDeleteLanguage = (index) => {
+    setConfirmAction(() => () => {
+      const updatedLanguages = languages.filter((_, i) => i !== index);
+      setLanguages(updatedLanguages);
+      if (activeLanguageIndex >= updatedLanguages.length) {
+        setActiveLanguageIndex(Math.max(0, updatedLanguages.length - 1));
+      }
+      setConfirmOpen(false);
+      setSnackbar({ open: true, message: 'Langue supprimée avec succès' });
+    });
+    setConfirmData({ type: 'langue' });
+    setConfirmOpen(true);
+  };
+
+  // Gestion de l'ajout d'un segment
+  const handleAddSegment = (languageIndex) => {
+    setEditingSegment({
+      randomId: generateRandomId(),
+      startTime: 0,
+      endTime: 0,
+      subtitles: [],
+      caption: '',
+      status: 'pending',
+      title: '',
+      url: '',
+      index: languages[languageIndex]?.items?.length || 0
+    });
+    setEditingIndex(-1);
+  };
+
+  // Gestion de la sauvegarde d'un segment
+  const handleSaveSegment = () => {
+    if (!editingSegment) return;
+    
+    const updatedLanguages = [...languages];
+    const languageItems = [...(updatedLanguages[activeLanguageIndex]?.items || [])];
+    
+    if (editingIndex === -1) {
+      // Ajout d'un nouveau segment
+      languageItems.push(editingSegment);
+    } else {
+      // Modification d'un segment existant
+      languageItems[editingIndex] = editingSegment;
+    }
+    
+    updatedLanguages[activeLanguageIndex] = {
+      ...updatedLanguages[activeLanguageIndex],
+      items: languageItems
+    };
+    
+    setLanguages(updatedLanguages);
+    setEditingSegment(null);
+    setEditingIndex(-1);
+    setSnackbar({ open: true, message: 'Segment enregistré avec succès' });
+  };
+
+  // Gestion de la suppression d'un segment
+  const handleDeleteSegment = (languageIndex, segmentIndex) => {
+    setConfirmAction(() => () => {
+      const updatedLanguages = [...languages];
+      const languageItems = [...updatedLanguages[languageIndex].items];
+      languageItems.splice(segmentIndex, 1);
+      
+      // Mettre à jour les indices des segments restants
+      const updatedItems = languageItems.map((item, idx) => ({
+        ...item,
+        index: idx
+      }));
+      
+      updatedLanguages[languageIndex] = {
+        ...updatedLanguages[languageIndex],
+        items: updatedItems
+      };
+      
+      setLanguages(updatedLanguages);
+      setConfirmOpen(false);
+      setSnackbar({ open: true, message: 'Segment supprimé avec succès' });
+    });
+    setConfirmData({ type: 'segment' });
+    setConfirmOpen(true);
+  };
+
+  // Gestion de l'édition d'un segment
+  const handleEditSegment = (languageIndex, segmentIndex) => {
+    const segment = languages[languageIndex].items[segmentIndex];
+    setEditingSegment({ ...segment });
+    setEditingIndex(segmentIndex);
+    setActiveLanguageIndex(languageIndex);
+  };
+
+  // Gestion de l'annulation de l'édition d'un segment
+  const handleCancelEditSegment = () => {
+    setEditingSegment(null);
+    setEditingIndex(-1);
+  };
+
+  // Afficher les sous-titres d'un segment
+  const handleShowSegmentSubtitles = (languageIndex, segmentIndex) => {
+    setSelectedSegment({
+      languageIndex,
+      segmentIndex,
+      segment: languages[languageIndex].items[segmentIndex]
+    });
+  };
+
+  // Gestion de l'ajout d'un sous-titre à un segment
+  const handleAddSegmentSubtitle = () => {
+    if (!selectedSegment) return;
+    
+    setEditingSubtitle({
+      startTime: 0,
+      endTime: 0,
+      text: '',
+      language: languages[selectedSegment.languageIndex].language
+    });
+    setEditingIndex(-1);
+  };
+
+  // Gestion de l'édition d'un sous-titre de segment
+  const handleEditSegmentSubtitle = (subtitleIndex) => {
+    if (!selectedSegment) return;
+    
+    const subtitle = selectedSegment.segment.subtitles[subtitleIndex];
     setEditingSubtitle({
       startTime: typeof subtitle.startTime === 'number' && !isNaN(subtitle.startTime) ? subtitle.startTime : 0,
       endTime: typeof subtitle.endTime === 'number' && !isNaN(subtitle.endTime) ? subtitle.endTime : 0,
       text: subtitle.text || '',
-      language: subtitle.language || activeLanguage
+      language: subtitle.language || languages[selectedSegment.languageIndex].language
     });
-    setEditIndex(index);
+    setEditingIndex(subtitleIndex);
   };
 
-  const cancelEdit = () => {
-    setEditingSubtitle(null);
-    setEditIndex(-1);
-  };
-  const saveEdit = () => {
-    const currentSubtitles = activeTab === 0 ? originalSubtitles : newSubtitles;
-    const updatedSubtitles = [...currentSubtitles];
+  // Gestion de la sauvegarde d'un sous-titre pour un segment
+  const handleSaveSegmentSubtitle = () => {
+    if (!selectedSegment || !editingSubtitle) return;
     
-    if (editIndex === -1) {
+    const { languageIndex, segmentIndex } = selectedSegment;
+    const updatedLanguages = [...languages];
+    const segment = { ...updatedLanguages[languageIndex].items[segmentIndex] };
+    const subtitles = [...(segment.subtitles || [])];
+    
+    if (editingIndex === -1) {
       // Ajout d'un nouveau sous-titre
-      updatedSubtitles.push({
-        ...editingSubtitle,
-        language: editingSubtitle.language || activeLanguage
-      });
+      subtitles.push(editingSubtitle);
     } else {
-      // Mise à jour d'un sous-titre existant
-      updatedSubtitles[editIndex] = {
-        ...editingSubtitle,
-        language: editingSubtitle.language || activeLanguage
-      };
+      // Modification d'un sous-titre existant
+      subtitles[editingIndex] = editingSubtitle;
     }
     
     // Trier les sous-titres par ordre de départ
-    updatedSubtitles.sort((a, b) => a.startTime - b.startTime);
+    subtitles.sort((a, b) => a.startTime - b.startTime);
     
-    if (activeTab === 0) {
-      setOriginalSubtitles(updatedSubtitles);
-    } else {
-      setNewSubtitles(updatedSubtitles);
-    }
+    segment.subtitles = subtitles;
+    updatedLanguages[languageIndex].items[segmentIndex] = segment;
     
+    setLanguages(updatedLanguages);
+    setSelectedSegment({
+      ...selectedSegment,
+      segment: updatedLanguages[languageIndex].items[segmentIndex]
+    });
     setEditingSubtitle(null);
-    setEditIndex(-1);
+    setEditingIndex(-1);
+    setSnackbar({ open: true, message: 'Sous-titre enregistré avec succès' });
   };
 
-  const askDeleteSubtitle = (index) => {
-    setPendingDeleteIndex(index);
+  // Gestion de la suppression d'un sous-titre d'un segment
+  const handleDeleteSegmentSubtitle = (subtitleIndex) => {
+    if (!selectedSegment) return;
+    
+    setConfirmAction(() => () => {
+      const { languageIndex, segmentIndex } = selectedSegment;
+      const updatedLanguages = [...languages];
+      const segment = { ...updatedLanguages[languageIndex].items[segmentIndex] };
+      const subtitles = segment.subtitles.filter((_, i) => i !== subtitleIndex);
+      
+      segment.subtitles = subtitles;
+      updatedLanguages[languageIndex].items[segmentIndex] = segment;
+      
+      setLanguages(updatedLanguages);
+      setSelectedSegment({
+        ...selectedSegment,
+        segment: updatedLanguages[languageIndex].items[segmentIndex]
+      });
+      setConfirmOpen(false);
+      setSnackbar({ open: true, message: 'Sous-titre supprimé avec succès' });
+    });
+    setConfirmData({ type: 'sous-titre' });
     setConfirmOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (pendingDeleteIndex !== null) {
-      if (activeTab === 0) {
-        setOriginalSubtitles(originalSubtitles.filter((_, i) => i !== pendingDeleteIndex));
-      } else {
-        setNewSubtitles(newSubtitles.filter((_, i) => i !== pendingDeleteIndex));
-      }
-    }
-    setConfirmOpen(false);
-    setPendingDeleteIndex(null);
-  };
-  const handleCancelDelete = () => {
-    setConfirmOpen(false);
-    setPendingDeleteIndex(null);
+  // Annulation de l'édition d'un sous-titre
+  const handleCancelEditSubtitle = () => {
+    setEditingSubtitle(null);
+    setEditingIndex(-1);
   };
 
+  // Gestion du changement d'un champ d'édition
   const handleChange = (field, value) => {
-    setEditingSubtitle({ ...editingSubtitle, [field]: value });
+    if (editingSegment) {
+      setEditingSegment({ ...editingSegment, [field]: value });
+    } else if (editingSubtitle) {
+      setEditingSubtitle({ ...editingSubtitle, [field]: value });
+    }
   };
 
+  // Gestion du changement de temps
+  const handleTimeChange = (field, value) => {
+    handleChange(field, parseAnyTime(value));
+  };
+
+  // Fermer le panneau de sous-titres du segment
+  const handleCloseSegmentSubtitles = () => {
+    setSelectedSegment(null);
+    setEditingSubtitle(null);
+    setEditingIndex(-1);
+  };
+
+  // Obtenir le token d'authentification
   const getToken = () => localStorage.getItem('token') || '';
+
+  // Gestion de la sauvegarde de toutes les modifications
   const handleSaveAll = async () => {
     if (!video?._id) return;
-    const type = activeTab === 0 ? 'original_subtitles' : 'new_subtitles';
-    const subtitles = activeTab === 0 ? originalSubtitles : newSubtitles;
+    
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/videos/${video._id}/subtitles`, {
+      // Sauvegarde des langues et segments
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/videos/${video._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${getToken()}`
         },
-        body: JSON.stringify({ subtitles, type })
+        body: JSON.stringify({ languages })
       });
-      if (!res.ok) throw new Error('Erreur lors de la sauvegarde');
-      setSnackbar({ open: true, message: 'Sous-titres enregistrés !' });
+      
+      // Sauvegarde des sous-titres originaux si modifiés
+      if (originalSubtitles.length > 0) {
+        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/videos/${video._id}/subtitles`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getToken()}`
+          },
+          body: JSON.stringify({ subtitles: originalSubtitles, type: 'original_subtitles' })
+        });
+      }
+      
+      // Sauvegarde des sous-titres modifiés si présents
+      if (newSubtitles.length > 0) {
+        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/videos/${video._id}/subtitles`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getToken()}`
+          },
+          body: JSON.stringify({ subtitles: newSubtitles, type: 'new_subtitles' })
+        });
+      }
+      
+      setSnackbar({ open: true, message: 'Modifications enregistrées avec succès!' });
       onSave && onSave();
+      setTimeout(() => onClose(), 1500);
     } catch (error) {
-      console.error("Erreur lors de la sauvegarde des sous-titres:", error);
+      console.error("Erreur lors de la sauvegarde :", error);
       setSnackbar({ open: true, message: 'Erreur lors de la sauvegarde' });
     }
-    onClose();
   };
 
-  const handleTimeChange = (field, value) => {
-    handleChange(field, parseAnyTime(value));
-  };
-  const addNewSubtitle = () => {
-    setEditingSubtitle({
-      startTime: 0,
-      endTime: 0,
-      text: '',
-      language: activeLanguage
-    });
-    setEditIndex(-1);
-  };
-
-  // Ajout : import JSON ou SRT de sous-titres (robuste)
-  const handleImportFile = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    const ext = file.name.split('.').pop().toLowerCase();
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        if (ext === 'json') {
-          const imported = JSON.parse(e.target.result);
-          if (Array.isArray(imported)) {
-            const mapped = imported.map(s => {
-              const st = parseAnyTime(s.startTime);
-              const et = parseAnyTime(s.endTime);
-              if (isNaN(st) || isNaN(et)) return null;
-              return {                startTime: st,
-                endTime: et,
-                text: s.title || s.text || '',
-                durationSeconds: s.durationSeconds,
-                language: s.language || activeLanguage
-              };
-            }).filter(Boolean);
-            if (activeTab === 0) setOriginalSubtitles(mapped);
-            else setNewSubtitles(mapped);
-          }        } else if (ext === 'srt') {
-          const parsed = parseSRT(e.target.result, activeLanguage);
-          if (activeTab === 0) setOriginalSubtitles(parsed);
-          else setNewSubtitles(parsed);
-        } else {
-          alert('Format non supporté. Utilisez un fichier .json ou .srt');
-        }
-      } catch (err) {
-        alert('Erreur lors de l\'import : ' + err.message);
-      }
-    };
-    reader.readAsText(file);
-  };
-
-  const currentSubtitles = activeTab === 0 ? originalSubtitles : newSubtitles;
-  const paginatedSubtitles = currentSubtitles.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-
+  // Rendu du composant
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperProps={{ 
-      sx: { 
-        bgcolor: '#ffffff',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05)'
-      } 
-    }}>
-      <DialogTitle sx={{ fontWeight: 600, color: '#18181b', pb: 0, borderBottom: '1px solid #e5e7eb' }}>
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      maxWidth="lg" 
+      fullWidth 
+      PaperProps={{ 
+        sx: { 
+          bgcolor: '#ffffff',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05)'
+        } 
+      }}
+    >
+      <DialogTitle sx={{ fontWeight: 600, color: '#18181b', pb: 1, borderBottom: '1px solid #e5e7eb' }}>
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { sm: 'center' }, justifyContent: 'space-between', gap: 2 }}>
           <span>Gestion des sous-titres - {video?.title}</span>
           <Tabs 
-            value={activeTab} 
-            onChange={handleTabChange} 
+            value={viewMode} 
+            onChange={handleViewModeChange} 
             sx={{ minHeight: 0, '.MuiTabs-flexContainer': { gap: 2 } }}
             TabIndicatorProps={{ style: { height: 3, background: '#64748b' } }}
           >
-            <Tab label="Sous-titres originaux" sx={{ fontWeight: 600, minHeight: 0, py: 1 }} />
-            <Tab label="Sous-titres modifiés" sx={{ fontWeight: 600, minHeight: 0, py: 1 }} />
-          </Tabs>
-        </Box>      </DialogTitle>
-      <DialogContent sx={{ pb: 4, bgcolor: '#ffffff' }}>
-        {/* Formulaire d'édition */}
-        {editingSubtitle && (
-          <Paper elevation={1} sx={{ p: 3, mb: 3, bgcolor: '#f8fafc', border: '1px solid #e5e7eb' }}>
-            <Typography variant="subtitle1" fontWeight={600} mb={2}>
-              {editIndex === -1 ? 'Ajouter un sous-titre' : 'Modifier le sous-titre'}
-            </Typography>
-            
-            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 2 }}>
-              <TextField
-                label="Début (MM:SS.mmm)"
-                value={formatTime(editingSubtitle.startTime)}
-                onChange={(e) => handleTimeChange('startTime', e.target.value)}
-                variant="outlined"
-                fullWidth
-                size="small"
-              />
-              <TextField
-                label="Fin (MM:SS.mmm)"
-                value={formatTime(editingSubtitle.endTime)}
-                onChange={(e) => handleTimeChange('endTime', e.target.value)}
-                variant="outlined"
-                fullWidth
-                size="small"
-              />
-              <FormControl fullWidth size="small">
-                <InputLabel>Langue</InputLabel>                <Select
-                  value={editingSubtitle.language || activeLanguage}
-                  label="Langue"
-                  onChange={(e) => handleChange('language', e.target.value)}
-                >
-                  <MenuItem value="fr">Français</MenuItem>
-                  <MenuItem value="en">Anglais</MenuItem>
-                  <MenuItem value="es">Espagnol</MenuItem>
-                  <MenuItem value="de">Allemand</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-            
-            <TextField
-              label="Texte"
-              value={editingSubtitle.text}
-              onChange={(e) => handleChange('text', e.target.value)}
-              variant="outlined"
-              multiline
-              rows={2}
-              fullWidth
-              sx={{ mb: 2 }}
+            <Tab 
+              icon={<LanguageIcon sx={{ fontSize: '1.2rem', mr: 1 }} />}
+              label="Langues & Segments" 
+              iconPosition="start"
+              sx={{ fontWeight: 600, minHeight: 0, py: 1 }} 
             />
-            
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-              <Button 
-                startIcon={<CancelIcon />} 
-                onClick={cancelEdit}
-                variant="outlined"
-                color="inherit"
-              >
-                Annuler
-              </Button>
-              <Button 
-                startIcon={<SaveIcon />} 
-                onClick={saveEdit}
-                variant="contained"
-                color="primary"
-              >
-                Enregistrer
-              </Button>
-            </Box>
-          </Paper>
-        )}
-        
-        {/* Liste des sous-titres */}
-        <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="subtitle1" fontWeight={600}>
-            {activeTab === 0 ? 'Sous-titres originaux' : 'Sous-titres modifiés'} ({currentSubtitles.length})
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button
-              startIcon={<UploadFileIcon />}
-              component="label"
-              variant="outlined"
-              color="secondary"
-              size="small"
-              disabled={!!editingSubtitle}
-            >
-              Importer JSON/SRT
-              <input type="file" accept=".json,.srt,application/json,text/srt" hidden onChange={handleImportFile} />
-            </Button>
-            <Button 
-              startIcon={<AddIcon />} 
-              onClick={addNewSubtitle}
-              variant="outlined"
-              color="primary"
-              size="small"
-              disabled={!!editingSubtitle}
-            >
-              Ajouter
-            </Button>
-          </Box>
+          </Tabs>
         </Box>
-        
-        {currentSubtitles.length === 0 && !editingSubtitle ? (
-          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-            Aucun sous-titre disponible
-          </Typography>
-        ) : (
+      </DialogTitle>
+
+      <DialogContent sx={{ pb: 2, bgcolor: '#ffffff' }}>
+        {/* Vue Langues et Segments */}
+        {viewMode === 0 && !selectedSegment && (
           <>
-          <Paper variant="outlined" sx={{ maxHeight: 400, overflow: 'auto' }}>
-            <List disablePadding>
-              {paginatedSubtitles.map((subtitle, index) => (
-                <React.Fragment key={page * rowsPerPage + index}>
-                  {index > 0 && <Divider />}
-                  <ListItem 
-                    sx={{ py: 1, bgcolor: (page * rowsPerPage + index) % 2 === 0 ? 'transparent' : '#f8fafc' }}
-                    secondaryAction={
-                      <Box>
-                        <IconButton edge="end" aria-label="edit" onClick={() => startEditSubtitle(subtitle, page * rowsPerPage + index)} disabled={!!editingSubtitle}>
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton edge="end" aria-label="delete" onClick={() => askDeleteSubtitle(page * rowsPerPage + index)} disabled={!!editingSubtitle}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    }
+            {/* Formulaire d'ajout de langue */}
+            <Paper elevation={1} sx={{ p: 3, mb: 3, bgcolor: '#f8fafc', border: '1px solid #e5e7eb' }}>
+              <Typography variant="subtitle1" fontWeight={600} mb={2}>
+                Ajouter une nouvelle langue
+              </Typography>
+              
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Langue</InputLabel>
+                  <Select
+                    value={newLanguageCode}
+                    label="Langue"
+                    onChange={(e) => setNewLanguageCode(e.target.value)}
                   >
-                    <ListItemText
-                      primary={subtitle.text}
-                      secondary={
-                        <Box component="span" sx={{ display: 'flex', gap: 1, fontSize: '0.75rem' }}>
-                          <Typography component="span" variant="caption">
-                            {formatTime(subtitle.startTime)} → {formatTime(subtitle.endTime)}
-                          </Typography>
-                          <Typography component="span" variant="caption" sx={{ fontWeight: 600 }}>
-                            {subtitle.language?.toUpperCase()}
-                          </Typography>
+                    {LANGUAGES.map((lang) => (
+                      <MenuItem key={lang.value} value={lang.value}>
+                        {lang.label} ({lang.value.toUpperCase()})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <Button
+                  startIcon={<AddIcon />}
+                  variant="contained"
+                  color="primary"
+                  disabled={!newLanguageCode}
+                  onClick={handleAddLanguage}
+                >
+                  Ajouter
+                </Button>
+              </Box>
+            </Paper>
+
+            {/* Liste des langues */}
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="h6" fontWeight={600} mb={2}>
+                Langues disponibles ({languages.length})
+              </Typography>
+              
+              {languages.length === 0 ? (
+                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                  Aucune langue disponible. Ajoutez une langue pour commencer.
+                </Typography>
+              ) : (
+                <Tabs
+                  value={activeLanguageIndex}
+                  onChange={(e, newValue) => {
+                    setActiveLanguageIndex(newValue);
+                    resetEditingStates();
+                  }}
+                  variant="scrollable"
+                  scrollButtons="auto"
+                  sx={{
+                    mb: 2,
+                    '.MuiTab-root': {
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      py: 1.5,
+                      px: 3
+                    }
+                  }}
+                >
+                  {languages.map((lang, index) => (
+                    <Tab
+                      key={index}
+                      label={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <LanguageIcon sx={{ fontSize: '1rem' }} />
+                          {LANGUAGES.find(l => l.value === lang.language)?.label || lang.language.toUpperCase()}
+                          <Chip
+                            label={lang.items?.length || 0}
+                            size="small"
+                            sx={{
+                              ml: 1,
+                              height: '20px',
+                              fontSize: '0.7rem',
+                              bgcolor: '#e0f2fe',
+                              color: '#0369a1'
+                            }}
+                          />
                         </Box>
                       }
-                      primaryTypographyProps={{
-                        sx: {
-                          fontWeight: 500,
-                          fontSize: '0.9rem'
-                        }
+                      sx={{
+                        minWidth: 'auto',
+                        position: 'relative'
                       }}
                     />
-                  </ListItem>
-                </React.Fragment>
-              ))}
-            </List>
-          </Paper>
-          <TablePagination
-            rowsPerPageOptions={[25, 50, 100, 200]}
-            component="div"
-            count={currentSubtitles.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={(_, newPage) => setPage(newPage)}
-            onRowsPerPageChange={e => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
-            sx={{ color: '#64748b', borderTop: '1px solid #e5e7eb', '.MuiTablePagination-toolbar': { px: 3 }, '.MuiTablePagination-select': { color: '#18181b' }, '.MuiTablePagination-selectIcon': { color: '#64748b' }, '.MuiButtonBase-root': { color: '#64748b' } }}
-          />
+                  ))}
+                </Tabs>
+              )}
+              
+              {/* Actions sur la langue sélectionnée */}
+              {languages.length > 0 && (
+                <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    Segments pour {LANGUAGES.find(l => l.value === languages[activeLanguageIndex]?.language)?.label || languages[activeLanguageIndex]?.language.toUpperCase()}
+                  </Typography>
+                  <Box>
+                    <Button
+                      startIcon={<AddIcon />}
+                      variant="contained"
+                      color="primary"
+                      size="small"
+                      onClick={() => handleAddSegment(activeLanguageIndex)}
+                      disabled={!!editingSegment}
+                    >
+                      Ajouter un segment
+                    </Button>
+                    <Button
+                      startIcon={<DeleteIcon />}
+                      variant="outlined"
+                      color="error"
+                      size="small"
+                      sx={{ ml: 1 }}
+                      onClick={() => handleDeleteLanguage(activeLanguageIndex)}
+                      disabled={!!editingSegment}
+                    >
+                      Supprimer cette langue
+                    </Button>
+                  </Box>
+                </Box>
+              )}
+            </Box>
+            
+            {/* Formulaire d'édition de segment */}
+            {editingSegment && (
+              <Paper elevation={1} sx={{ p: 3, mb: 3, bgcolor: '#f8fafc', border: '1px solid #e5e7eb' }}>
+                <Typography variant="subtitle1" fontWeight={600} mb={2}>
+                  {editingIndex === -1 ? 'Ajouter un segment' : 'Modifier le segment'}
+                </Typography>
+                
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="Titre"
+                      value={editingSegment.title || ''}
+                      onChange={(e) => handleChange('title', e.target.value)}
+                      variant="outlined"
+                      fullWidth
+                      size="small"
+                      sx={{ mb: 2 }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="Légende"
+                      value={editingSegment.caption || ''}
+                      onChange={(e) => handleChange('caption', e.target.value)}
+                      variant="outlined"
+                      fullWidth
+                      size="small"
+                      sx={{ mb: 2 }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="URL"
+                      value={editingSegment.url || ''}
+                      onChange={(e) => handleChange('url', e.target.value)}
+                      variant="outlined"
+                      fullWidth
+                      size="small"
+                      sx={{ mb: 2 }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                      <InputLabel>Statut</InputLabel>
+                      <Select
+                        value={editingSegment.status || 'pending'}
+                        label="Statut"
+                        onChange={(e) => handleChange('status', e.target.value)}
+                      >
+                        <MenuItem value="pending">En attente</MenuItem>
+                        <MenuItem value="processing">En cours de traitement</MenuItem>
+                        <MenuItem value="completed">Terminé</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="Temps de début (secondes)"
+                      value={editingSegment.startTime || 0}
+                      onChange={(e) => handleTimeChange('startTime', e.target.value)}
+                      variant="outlined"
+                      fullWidth
+                      type="number"
+                      size="small"
+                      sx={{ mb: 2 }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="Temps de fin (secondes)"
+                      value={editingSegment.endTime || 0}
+                      onChange={(e) => handleTimeChange('endTime', e.target.value)}
+                      variant="outlined"
+                      fullWidth
+                      type="number"
+                      size="small"
+                      sx={{ mb: 2 }}
+                    />
+                  </Grid>
+                </Grid>
+                
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
+                  <Button
+                    startIcon={<CancelIcon />}
+                    onClick={handleCancelEditSegment}
+                    variant="outlined"
+                    color="inherit"
+                  >
+                    Annuler
+                  </Button>
+                  <Button
+                    startIcon={<SaveIcon />}
+                    onClick={handleSaveSegment}
+                    variant="contained"
+                    color="primary"
+                  >
+                    Enregistrer
+                  </Button>
+                </Box>
+              </Paper>
+            )}
+            
+            {/* Liste des segments pour la langue sélectionnée */}
+            {languages.length > 0 && !editingSegment && (
+              <Box sx={{ mb: 3 }}>
+                {languages[activeLanguageIndex]?.items?.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                    Aucun segment disponible pour cette langue. Ajoutez un segment pour commencer.
+                  </Typography>
+                ) : (
+                  <Grid container spacing={2}>
+                    {languages[activeLanguageIndex]?.items?.map((segment, index) => (
+                      <Grid item xs={12} md={6} key={segment.randomId || index}>
+                        <Card sx={{ border: '1px solid #e5e7eb', boxShadow: 'none' }}>
+                          <CardContent sx={{ pb: 1 }}>
+                            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                              {segment.title || `Segment ${index + 1}`}
+                            </Typography>
+                            
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                              {segment.caption || 'Aucune légende'}
+                            </Typography>
+                            
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                              <Chip
+                                label={segment.status}
+                                size="small"
+                                sx={{
+                                  bgcolor: segment.status === 'completed' ? '#dcfce7' : 
+                                          segment.status === 'processing' ? '#e0f2fe' : '#f3f4f6',
+                                  color: segment.status === 'completed' ? '#166534' : 
+                                         segment.status === 'processing' ? '#0c4a6e' : '#4b5563'
+                                }}
+                              />
+                              
+                              <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                                {formatTime(segment.startTime || 0)} - {formatTime(segment.endTime || 0)}
+                              </Typography>
+                            </Box>
+                            
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                              <Tooltip title="Sous-titres">
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <SubtitlesIcon sx={{ fontSize: '0.9rem', color: '#64748b' }} />
+                                  <Typography variant="caption">
+                                    {segment.subtitles?.length || 0} sous-titres
+                                  </Typography>
+                                </Box>
+                              </Tooltip>
+                            </Box>
+                          </CardContent>
+                          
+                          <CardActions sx={{ px: 2, pt: 0, pb: 2, justifyContent: 'space-between' }}>
+                            <Box>
+                              <Tooltip title="Gérer les sous-titres">
+                                <IconButton 
+                                  size="small" 
+                                  color="primary"
+                                  onClick={() => handleShowSegmentSubtitles(activeLanguageIndex, index)}
+                                >
+                                  <SubtitlesIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              {segment.url && (
+                                <Tooltip title="Voir la vidéo">
+                                  <IconButton 
+                                    size="small" 
+                                    color="info"
+                                    onClick={() => window.open(segment.url, '_blank')}
+                                  >
+                                    <VideocamIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            </Box>
+                            <Box>
+                              <Button
+                                startIcon={<EditIcon />}
+                                variant="outlined"
+                                size="small"
+                                onClick={() => handleEditSegment(activeLanguageIndex, index)}
+                              >
+                                Éditer
+                              </Button>
+                              <Button
+                                startIcon={<DeleteIcon />}
+                                variant="outlined"
+                                color="error"
+                                size="small"
+                                sx={{ ml: 1 }}
+                                onClick={() => handleDeleteSegment(activeLanguageIndex, index)}
+                              >
+                                Supprimer
+                              </Button>
+                            </Box>
+                          </CardActions>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                )}
+              </Box>
+            )}
           </>
         )}
-        
-        {/* Dialog de confirmation suppression */}        <Dialog open={confirmOpen} onClose={handleCancelDelete} PaperProps={{ 
-          sx: { 
-            bgcolor: '#ffffff',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05)'
-          } 
-        }}>
-          <DialogTitle sx={{ color: '#18181b', borderBottom: '1px solid #e5e7eb' }}>Confirmer la suppression</DialogTitle>
-          <DialogContent sx={{ bgcolor: '#ffffff', pt: 2 }}>
-            <DialogContentText sx={{ color: '#18181b' }}>
-              Voulez-vous vraiment supprimer ce sous-titre ? Cette action est irréversible.
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions sx={{ borderTop: '1px solid #f3f4f6' }}>
-            <Button onClick={handleCancelDelete} sx={{ color: '#64748b', borderColor: '#e5e7eb' }} variant="outlined">Annuler</Button>
-            <Button onClick={handleConfirmDelete} color="error" variant="contained">Supprimer</Button>
-          </DialogActions>
-        </Dialog>
+
+        {/* Vue de gestion des sous-titres d'un segment */}
+        {selectedSegment && (
+          <Box>
+            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Button 
+                startIcon={<ArrowBackIcon />} 
+                variant="outlined" 
+                onClick={handleCloseSegmentSubtitles}
+              >
+                Retour aux segments
+              </Button>
+              <Typography variant="h6" fontWeight={600}>
+                Sous-titres du segment: {selectedSegment.segment.title || `Segment ${selectedSegment.segmentIndex + 1}`}
+              </Typography>
+              <Button
+                startIcon={<AddIcon />}
+                variant="contained"
+                color="primary"
+                onClick={handleAddSegmentSubtitle}
+                disabled={!!editingSubtitle}
+              >
+                Ajouter un sous-titre
+              </Button>
+            </Box>
+
+            {/* Formulaire d'édition de sous-titre */}
+            {editingSubtitle && (
+              <Paper elevation={1} sx={{ p: 3, mb: 3, bgcolor: '#f8fafc', border: '1px solid #e5e7eb' }}>
+                <Typography variant="subtitle1" fontWeight={600} mb={2}>
+                  {editingIndex === -1 ? 'Ajouter un sous-titre' : 'Modifier le sous-titre'}
+                </Typography>
+                
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      label="Début (MM:SS.mmm)"
+                      value={formatTime(editingSubtitle.startTime)}
+                      onChange={(e) => handleTimeChange('startTime', e.target.value)}
+                      variant="outlined"
+                      fullWidth
+                      size="small"
+                      sx={{ mb: 2 }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      label="Fin (MM:SS.mmm)"
+                      value={formatTime(editingSubtitle.endTime)}
+                      onChange={(e) => handleTimeChange('endTime', e.target.value)}
+                      variant="outlined"
+                      fullWidth
+                      size="small"
+                      sx={{ mb: 2 }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                      <InputLabel>Langue</InputLabel>
+                      <Select
+                        value={editingSubtitle.language || languages[selectedSegment.languageIndex].language}
+                        label="Langue"
+                        onChange={(e) => handleChange('language', e.target.value)}
+                      >
+                        {LANGUAGES.map((lang) => (
+                          <MenuItem key={lang.value} value={lang.value}>
+                            {lang.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      label="Texte du sous-titre"
+                      value={editingSubtitle.text || ''}
+                      onChange={(e) => handleChange('text', e.target.value)}
+                      variant="outlined"
+                      fullWidth
+                      multiline
+                      rows={3}
+                      sx={{ mb: 2 }}
+                    />
+                  </Grid>
+                </Grid>
+                
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
+                  <Button
+                    startIcon={<CancelIcon />}
+                    onClick={handleCancelEditSubtitle}
+                    variant="outlined"
+                    color="inherit"
+                  >
+                    Annuler
+                  </Button>
+                  <Button
+                    startIcon={<SaveIcon />}
+                    onClick={handleSaveSegmentSubtitle}
+                    variant="contained"
+                    color="primary"
+                  >
+                    Enregistrer
+                  </Button>
+                </Box>
+              </Paper>
+            )}
+
+            {/* Liste des sous-titres du segment */}
+            <Box>
+              {selectedSegment.segment.subtitles?.length === 0 ? (
+                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                  Aucun sous-titre disponible pour ce segment. Ajoutez un sous-titre pour commencer.
+                </Typography>
+              ) : (
+                <Paper variant="outlined" sx={{ maxHeight: 400, overflow: 'auto' }}>
+                  <List disablePadding>
+                    {selectedSegment.segment.subtitles.map((subtitle, index) => (
+                      <React.Fragment key={index}>
+                        {index > 0 && <Divider />}
+                        <ListItem 
+                          sx={{ py: 1, bgcolor: index % 2 === 0 ? 'transparent' : '#f8fafc' }}
+                          secondaryAction={
+                            <Box>
+                              <IconButton 
+                                edge="end" 
+                                aria-label="edit" 
+                                onClick={() => handleEditSegmentSubtitle(index)} 
+                                disabled={!!editingSubtitle}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton 
+                                edge="end" 
+                                aria-label="delete" 
+                                onClick={() => handleDeleteSegmentSubtitle(index)} 
+                                disabled={!!editingSubtitle}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Box>
+                          }
+                        >
+                          <ListItemText
+                            primary={subtitle.text}
+                            secondary={
+                              <Box component="span" sx={{ display: 'flex', gap: 1, fontSize: '0.75rem' }}>
+                                <Typography component="span" variant="caption">
+                                  {formatTime(subtitle.startTime)} → {formatTime(subtitle.endTime)}
+                                </Typography>
+                                <Typography component="span" variant="caption" sx={{ fontWeight: 600 }}>
+                                  {subtitle.language?.toUpperCase()}
+                                </Typography>
+                              </Box>
+                            }
+                            primaryTypographyProps={{
+                              sx: {
+                                fontWeight: 500,
+                                fontSize: '0.9rem'
+                              }
+                            }}
+                          />
+                        </ListItem>
+                      </React.Fragment>
+                    ))}
+                  </List>
+                </Paper>
+              )}
+            </Box>
+          </Box>
+        )}
       </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3, borderTop: '1px solid #f3f4f6' }}>
+      
+      <DialogActions sx={{ px: 3, pb: 3, pt: 1, borderTop: '1px solid #f3f4f6' }}>
         <Button 
           onClick={onClose} 
           sx={{ color: '#64748b', borderColor: '#e5e7eb' }} 
@@ -503,15 +982,31 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
         <Button 
           onClick={handleSaveAll} 
           variant="contained" 
-          sx={{ 
-            bgcolor: '#e5e7eb', 
-            color: '#18181b',
-            '&:hover': { bgcolor: '#d1d5db' }
-          }}
+          color="primary"
+          startIcon={<SaveIcon />}
         >
           Enregistrer les modifications
         </Button>
       </DialogActions>
+
+      {/* Dialog de confirmation suppression */}
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} PaperProps={{ 
+        sx: { 
+          bgcolor: '#ffffff',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05)'
+        } 
+      }}>
+        <DialogTitle sx={{ color: '#18181b', borderBottom: '1px solid #e5e7eb' }}>Confirmer la suppression</DialogTitle>
+        <DialogContent sx={{ bgcolor: '#ffffff', pt: 2 }}>
+          <DialogContentText sx={{ color: '#18181b' }}>
+            Voulez-vous vraiment supprimer {confirmData?.type === 'langue' ? 'cette langue' : confirmData?.type === 'segment' ? 'ce segment' : 'ce sous-titre'} ? Cette action est irréversible.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ borderTop: '1px solid #f3f4f6' }}>
+          <Button onClick={() => setConfirmOpen(false)} sx={{ color: '#64748b', borderColor: '#e5e7eb' }} variant="outlined">Annuler</Button>
+          <Button onClick={confirmAction} color="error" variant="contained">Supprimer</Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar({ open: false, message: '' })} message={snackbar.message} />
     </Dialog>
