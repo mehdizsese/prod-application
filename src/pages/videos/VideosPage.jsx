@@ -6,6 +6,7 @@ import {
   TextField, InputAdornment, TablePagination, TableSortLabel, Avatar, Button
 } from '@mui/material';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import MusicNoteIcon from '@mui/icons-material/MusicNote'; 
@@ -42,10 +43,7 @@ const VideosPage = ({ videos, fetchAll }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [orderBy, setOrderBy] = useState('title');
-  const [order, setOrder] = useState('asc');
-  // anchorEl stocke l'élément ET la vidéo sélectionnée
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [selectedVideo, setSelectedVideo] = useState(null);
+  const [order, setOrder] = useState('asc');  const [selectedVideo, setSelectedVideo] = useState(null);
   const [openEdit, setOpenEdit] = useState(false);
   const [openSubtitles, setOpenSubtitles] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
@@ -65,18 +63,6 @@ const VideosPage = ({ videos, fetchAll }) => {
     setPage(0);
   };
 
-  const handleMenuOpen = (event, video) => {
-    setAnchorEl({ anchor: event.currentTarget, video });
-    setSelectedVideo(video);
-  };
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-  // Ouvre la modale édition
-  const handleEdit = () => {
-    setOpenEdit(true);
-    handleMenuClose();
-  };
   const getToken = () => localStorage.getItem('token') || '';
   const handleDelete = async () => {
     if (!selectedVideo?._id) return;
@@ -90,15 +76,6 @@ const VideosPage = ({ videos, fetchAll }) => {
     setConfirmDeleteOpen(false);
     setSelectedVideo(null);
     fetchAll();
-  };
-  // Ouvre la confirmation suppression
-  const handleConfirmDelete = () => {
-    setConfirmDeleteOpen(true);
-    handleMenuClose();
-  };
-  const handleSubtitles = () => {
-    setOpenSubtitles(true);
-    handleMenuClose();
   };
 
   console.log('VIDEOS PAGE - vidéos reçues :', videos);
@@ -227,7 +204,7 @@ const VideosPage = ({ videos, fetchAll }) => {
                         component={Link}
                         to={`/videos/${video._id}`}
                       >
-                        <PlayCircleIcon />
+                        <VisibilityIcon />
                       </IconButton>
                       <IconButton 
                         aria-label="supprimer" 
@@ -239,9 +216,6 @@ const VideosPage = ({ videos, fetchAll }) => {
                         }}
                       >
                         <DeleteIcon />
-                      </IconButton>
-                      <IconButton aria-label="more actions" size="small" sx={{ color: '#94a3b8' }} onClick={(e) => handleMenuOpen(e, video)}>
-                        <MoreVertIcon />
                       </IconButton>
                     </Stack>
                   </TableCell>
@@ -255,8 +229,7 @@ const VideosPage = ({ videos, fetchAll }) => {
               </TableRow>
             )}
           </TableBody>
-        </Table>
-        <TablePagination
+        </Table>        <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
           count={filteredVideos.length}
@@ -267,12 +240,6 @@ const VideosPage = ({ videos, fetchAll }) => {
           sx={{ color: '#94a3b8', borderTop: '1px solid #e5e7eb', '.MuiTablePagination-toolbar': { px: 3 }, '.MuiTablePagination-select': { color: '#18181b' }, '.MuiTablePagination-selectIcon': { color: '#94a3b8' }, '.MuiButtonBase-root': { color: '#3b82f6' } }}
         />
       </TableContainer>
-      {/* Menu contextuel actions vidéo */}
-      <Menu anchorEl={anchorEl?.anchor} open={Boolean(anchorEl)} onClose={handleMenuClose} PaperProps={{ sx: { bgcolor: '#fff', color: '#18181b', border: '1px solid #e5e7eb' } }}>
-        <MenuItem onClick={handleEdit} sx={{ gap: 2 }}><EditIcon sx={{ fontSize: 18 }} /> Modifier</MenuItem>
-        <MenuItem onClick={handleSubtitles} sx={{ gap: 2 }}><SubtitlesIcon sx={{ fontSize: 18 }} /> Gérer les sous-titres</MenuItem>
-        <MenuItem onClick={handleConfirmDelete} sx={{ gap: 2, color: '#ef4444' }}><DeleteIcon sx={{ fontSize: 18 }} /> Supprimer</MenuItem>
-      </Menu>
       {/* Dialog de confirmation suppression vidéo */}
       <Dialog open={confirmDeleteOpen} onClose={() => setConfirmDeleteOpen(false)}>
         <DialogTitle>Confirmer la suppression</DialogTitle>

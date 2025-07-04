@@ -6,7 +6,7 @@ import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import MovieIcon from '@mui/icons-material/Movie';
 import WorkIcon from '@mui/icons-material/Work';
-import PlayCircleIcon from '@mui/icons-material/PlayCircle';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AccountDialog from '../../components/AccountDialog';
 
@@ -131,10 +131,9 @@ const AccountsPage = ({ accounts, fetchAll }) => {
                       px: 2
                     }} 
                   />
-                </Stack>
-                <Stack direction="row" spacing={2} mt={2} sx={{ width: '100%' }}>
+                </Stack>                <Stack direction="row" spacing={2} mt={2} sx={{ width: '100%' }}>
                   <Button 
-                    startIcon={<PlayCircleIcon />} 
+                    startIcon={<VisibilityIcon />} 
                     variant="contained" 
                     sx={{ 
                       bgcolor: '#3b82f6', 
