@@ -82,14 +82,18 @@ const VideoDialog = ({ open, onClose, video, onSave, onDelete }) => {
     const { value } = event.target;
     handleChange('platforms_uploaded', value);
   };
-
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ 
+      sx: { 
+        bgcolor: '#ffffff',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05)'
+      } 
+    }}>
       <form onSubmit={handleSubmit}>
-        <DialogTitle sx={{ fontWeight: 600, color: '#111827' }}>
+        <DialogTitle sx={{ fontWeight: 600, color: '#18181b', borderBottom: '1px solid #e5e7eb' }}>
           {video && video._id ? 'Modifier la vidéo' : 'Ajouter une vidéo'}
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ bgcolor: '#ffffff', pt: 3 }}>
           <TextField 
             label="Titre" 
             fullWidth 
@@ -98,7 +102,7 @@ const VideoDialog = ({ open, onClose, video, onSave, onDelete }) => {
             onChange={e => handleChange('title', e.target.value)}
           />
           <TextField 
-            label="Lien" 
+            label="Lien"
             fullWidth 
             margin="dense" 
             value={localVideo?.link || ''} 
@@ -192,14 +196,36 @@ const VideoDialog = ({ open, onClose, video, onSave, onDelete }) => {
                 </MenuItem>
               ))}
             </Select>
-          </FormControl>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={onClose} color="inherit" variant="outlined">Annuler</Button>
+          </FormControl>        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, borderTop: '1px solid #f3f4f6' }}>
+          <Button 
+            onClick={onClose} 
+            sx={{ color: '#64748b', borderColor: '#e5e7eb' }} 
+            variant="outlined"
+          >
+            Annuler
+          </Button>
           {video && video._id && (
-            <Button onClick={handleDelete} color="error" variant="outlined">Supprimer</Button>
+            <Button 
+              onClick={handleDelete} 
+              color="error" 
+              variant="outlined"
+              sx={{ borderColor: '#f87171' }}
+            >
+              Supprimer
+            </Button>
           )}
-          <Button type="submit" color="primary" variant="contained">Enregistrer</Button>
+          <Button 
+            type="submit" 
+            sx={{ 
+              bgcolor: '#e5e7eb', 
+              color: '#18181b',
+              '&:hover': { bgcolor: '#d1d5db' }
+            }} 
+            variant="contained"
+          >
+            Enregistrer
+          </Button>
         </DialogActions>
       </form>
     </Dialog>

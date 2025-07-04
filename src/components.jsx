@@ -14,27 +14,26 @@ const platformIcons = {
 
 export function SocialAccounts({ accounts }) {
   return (
-    <Box sx={{ width: '100%', height: '100%', bgcolor: '#1e293b', p: { xs: 3, md: 4, lg: 6 }, overflow: 'hidden' }}><Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight={700} color="#ffffff" mb={2}>
+    <Box sx={{ width: '100%', height: '100%', bgcolor: '#ffffff', p: { xs: 3, md: 4, lg: 6 }, overflow: 'hidden' }}><Box sx={{ mb: 4 }}>
+        <Typography variant="h4" fontWeight={700} color="#18181b" mb={2}>
           Social Accounts
         </Typography>
-        <Typography variant="body1" color="#94a3b8">
+        <Typography variant="body1" color="#64748b">
           Manage your connected social media platforms
         </Typography>
       </Box>
         <Grid container spacing={{ xs: 3, sm: 4, md: 5, lg: 6 }}>
-        {accounts.map(acc => (
-          <Grid item xs={12} sm={6} lg={4} xl={3} key={acc._id}>            <Card sx={{ 
+        {accounts.map(acc => (          <Grid item xs={12} sm={6} lg={4} xl={3} key={acc._id}>            <Card sx={{ 
               height: '280px',
               borderRadius: 6, 
-              boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)', 
-              bgcolor: '#0f172a', 
-              border: '1px solid #334155',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05)', 
+              bgcolor: '#ffffff', 
+              border: '1px solid #e5e7eb',
               transition: 'all 0.3s ease-in-out', 
               '&:hover': { 
-                boxShadow: '0 25px 50px -12px rgb(59 130 246 / 0.5)', 
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05)', 
                 transform: 'translateY(-8px) scale(1.05)',
-                borderColor: '#3b82f6'
+                borderColor: '#d1d5db'
               } 
             }}>
               <CardContent sx={{ p: { xs: 3, sm: 4, md: 5 }, height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -46,12 +45,11 @@ export function SocialAccounts({ accounts }) {
                     boxShadow: '0 8px 32px 0 rgb(0 0 0 / 0.3)'
                   }}>
                     {platformIcons[acc.platform] || <WorkIcon sx={{ color: 'white', fontSize: 32 }} />}
-                  </Avatar>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography variant="h5" fontWeight={800} color="#ffffff" mb={2} noWrap>
+                  </Avatar>                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="h5" fontWeight={800} color="#18181b" mb={2} noWrap>
                       {acc.name || acc.username}
                     </Typography>
-                    <Typography variant="body1" color="#94a3b8" sx={{ 
+                    <Typography variant="body1" color="#64748b" sx={{ 
                       display: '-webkit-box',
                       WebkitLineClamp: 3,
                       WebkitBoxOrient: 'vertical',
@@ -61,13 +59,12 @@ export function SocialAccounts({ accounts }) {
                     </Typography>
                   </Box>
                 </Stack>
-                <Stack direction="row" spacing={3} mt="auto">
-                  <Chip 
+                <Stack direction="row" spacing={3} mt="auto">                  <Chip 
                     label={acc.platform} 
                     size="medium" 
                     sx={{ 
-                      bgcolor: '#334155', 
-                      color: '#e2e8f0', 
+                      bgcolor: '#f3f4f6', 
+                      color: '#18181b', 
                       fontWeight: 700,
                       textTransform: 'capitalize',
                       fontSize: '0.9rem',

@@ -1,49 +1,62 @@
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 
-const darkTheme = createTheme({
+const lightTheme = createTheme({
   palette: {
-    mode: 'dark',
+    mode: 'light',
     primary: {
-      main: '#3b82f6',
+      main: '#64748b', // Gris neutre
     },
     secondary: {
-      main: '#10b981',
+      main: '#10b981', // Gardé comme accent vert
     },
     background: {
-      default: '#0f172a',
-      paper: '#1e293b',
+      default: '#ffffff',
+      paper: '#f3f4f6',
     },
     text: {
-      primary: '#ffffff',
-      secondary: '#94a3b8',
+      primary: '#18181b',
+      secondary: '#64748b',
     },
   },
   components: {
     MuiPaper: {
       styleOverrides: {
         root: {
-          backgroundColor: '#0f172a',
+          backgroundColor: '#ffffff',
         },
       },
     },
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: '#1e293b',
+          backgroundColor: '#f8fafc',
+          color: '#18181b',
         },
       },
     },
     MuiDrawer: {
       styleOverrides: {
         paper: {
-          backgroundColor: '#1e293b',
+          backgroundColor: '#ffffff',
         },
       },
     },
     MuiCard: {
       styleOverrides: {
         root: {
-          backgroundColor: '#0f172a',
+          backgroundColor: '#ffffff',
+          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        contained: {
+          backgroundColor: '#e5e7eb',
+          color: '#18181b',
+          '&:hover': {
+            backgroundColor: '#d1d5db',
+          },
         },
       },
     },
@@ -51,5 +64,5 @@ const darkTheme = createTheme({
 });
 
 export const AppThemeProvider = ({ children }) => {
-  return <ThemeProvider theme={darkTheme}>{children}</ThemeProvider>;
+  return <ThemeProvider theme={lightTheme}>{children}</ThemeProvider>;
 };

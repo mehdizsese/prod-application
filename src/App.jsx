@@ -115,7 +115,7 @@ function App() {
     if (loading) {
       return (
         <Box className="loading-container">
-          <Typography variant="h6" color="#94a3b8">Loading...</Typography>
+          <Typography variant="h6" color="#64748b">Loading...</Typography>
         </Box>
       );
     }
@@ -141,7 +141,7 @@ function App() {
   return (
     <Box sx={{ 
       display: 'flex', 
-      bgcolor: '#fff', 
+      bgcolor: '#ffffff', 
       minHeight: '100vh', 
       width: '100%', 
       position: 'absolute', 
@@ -151,7 +151,7 @@ function App() {
       right: 0,
       overflow: 'hidden' 
     }}>
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: '#fff', boxShadow: '0 2px 8px 0 #f1f5f9', borderBottom: '1px solid #e5e7eb' }}>
+      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: '#ffffff', boxShadow: '0 2px 8px 0 rgba(0, 0, 0, 0.05)', borderBottom: '1px solid #e5e7eb' }}>
         <Toolbar sx={{ px: 4, minHeight: 64 }}>
           <Typography variant="h5" noWrap sx={{ flexGrow: 0, color: '#22223b', fontWeight: 800, mr: 4, letterSpacing: 1 }}>Social Video Manager</Typography>
           {/* Navigation principale sous forme de Tabs horizontaux */}
@@ -195,7 +195,7 @@ function App() {
       </AppBar>
       <Box component="main" sx={{ 
         flexGrow: 1, 
-        bgcolor: '#fff', 
+        bgcolor: '#ffffff', 
         minHeight: '100vh', 
         height: '100vh', 
         overflow: 'auto', 

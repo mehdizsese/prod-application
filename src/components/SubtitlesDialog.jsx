@@ -274,25 +274,29 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
   const paginatedSubtitles = currentSubtitles.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ fontWeight: 600, color: '#111827', pb: 0 }}>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperProps={{ 
+      sx: { 
+        bgcolor: '#ffffff',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05)'
+      } 
+    }}>
+      <DialogTitle sx={{ fontWeight: 600, color: '#18181b', pb: 0, borderBottom: '1px solid #e5e7eb' }}>
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { sm: 'center' }, justifyContent: 'space-between', gap: 2 }}>
           <span>Gestion des sous-titres - {video?.title}</span>
           <Tabs 
             value={activeTab} 
             onChange={handleTabChange} 
             sx={{ minHeight: 0, '.MuiTabs-flexContainer': { gap: 2 } }}
-            TabIndicatorProps={{ style: { height: 3, background: '#3b82f6' } }}
+            TabIndicatorProps={{ style: { height: 3, background: '#64748b' } }}
           >
             <Tab label="Sous-titres originaux" sx={{ fontWeight: 600, minHeight: 0, py: 1 }} />
             <Tab label="Sous-titres modifiés" sx={{ fontWeight: 600, minHeight: 0, py: 1 }} />
           </Tabs>
-        </Box>
-      </DialogTitle>
-      <DialogContent sx={{ pb: 4 }}>
+        </Box>      </DialogTitle>
+      <DialogContent sx={{ pb: 4, bgcolor: '#ffffff' }}>
         {/* Formulaire d'édition */}
         {editingSubtitle && (
-          <Paper elevation={2} sx={{ p: 3, mb: 3, bgcolor: '#f8fafc' }}>
+          <Paper elevation={1} sx={{ p: 3, mb: 3, bgcolor: '#f8fafc', border: '1px solid #e5e7eb' }}>
             <Typography variant="subtitle1" fontWeight={600} mb={2}>
               {editIndex === -1 ? 'Ajouter un sous-titre' : 'Modifier le sous-titre'}
             </Typography>
@@ -447,31 +451,46 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
             page={page}
             onPageChange={(_, newPage) => setPage(newPage)}
             onRowsPerPageChange={e => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
-            sx={{ color: '#94a3b8', borderTop: '1px solid #334155', '.MuiTablePagination-toolbar': { px: 3 }, '.MuiTablePagination-select': { color: '#e2e8f0' }, '.MuiTablePagination-selectIcon': { color: '#94a3b8' }, '.MuiButtonBase-root': { color: '#3b82f6' } }}
+            sx={{ color: '#64748b', borderTop: '1px solid #e5e7eb', '.MuiTablePagination-toolbar': { px: 3 }, '.MuiTablePagination-select': { color: '#18181b' }, '.MuiTablePagination-selectIcon': { color: '#64748b' }, '.MuiButtonBase-root': { color: '#64748b' } }}
           />
           </>
         )}
         
-        {/* Dialog de confirmation suppression */}
-        <Dialog open={confirmOpen} onClose={handleCancelDelete}>
-          <DialogTitle>Confirmer la suppression</DialogTitle>
-          <DialogContent>
-            <DialogContentText>
+        {/* Dialog de confirmation suppression */}        <Dialog open={confirmOpen} onClose={handleCancelDelete} PaperProps={{ 
+          sx: { 
+            bgcolor: '#ffffff',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05)'
+          } 
+        }}>
+          <DialogTitle sx={{ color: '#18181b', borderBottom: '1px solid #e5e7eb' }}>Confirmer la suppression</DialogTitle>
+          <DialogContent sx={{ bgcolor: '#ffffff', pt: 2 }}>
+            <DialogContentText sx={{ color: '#18181b' }}>
               Voulez-vous vraiment supprimer ce sous-titre ? Cette action est irréversible.
             </DialogContentText>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCancelDelete} color="inherit" variant="outlined">Annuler</Button>
+          <DialogActions sx={{ borderTop: '1px solid #f3f4f6' }}>
+            <Button onClick={handleCancelDelete} sx={{ color: '#64748b', borderColor: '#e5e7eb' }} variant="outlined">Annuler</Button>
             <Button onClick={handleConfirmDelete} color="error" variant="contained">Supprimer</Button>
           </DialogActions>
         </Dialog>
       </DialogContent>
-      
-      <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button onClick={onClose} color="inherit" variant="outlined">
+        <DialogActions sx={{ px: 3, pb: 3, borderTop: '1px solid #f3f4f6' }}>
+        <Button 
+          onClick={onClose} 
+          sx={{ color: '#64748b', borderColor: '#e5e7eb' }} 
+          variant="outlined"
+        >
           Annuler
         </Button>
-        <Button onClick={handleSaveAll} variant="contained" color="primary">
+        <Button 
+          onClick={handleSaveAll} 
+          variant="contained" 
+          sx={{ 
+            bgcolor: '#e5e7eb', 
+            color: '#18181b',
+            '&:hover': { bgcolor: '#d1d5db' }
+          }}
+        >
           Enregistrer les modifications
         </Button>
       </DialogActions>
