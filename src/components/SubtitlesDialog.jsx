@@ -275,20 +275,21 @@ const SubtitlesDialog = ({ open, onClose, video, onSave }) => {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ fontWeight: 600, color: '#111827' }}>
-        Gestion des sous-titres - {video?.title}
+      <DialogTitle sx={{ fontWeight: 600, color: '#111827', pb: 0 }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { sm: 'center' }, justifyContent: 'space-between', gap: 2 }}>
+          <span>Gestion des sous-titres - {video?.title}</span>
+          <Tabs 
+            value={activeTab} 
+            onChange={handleTabChange} 
+            sx={{ minHeight: 0, '.MuiTabs-flexContainer': { gap: 2 } }}
+            TabIndicatorProps={{ style: { height: 3, background: '#3b82f6' } }}
+          >
+            <Tab label="Sous-titres originaux" sx={{ fontWeight: 600, minHeight: 0, py: 1 }} />
+            <Tab label="Sous-titres modifiés" sx={{ fontWeight: 600, minHeight: 0, py: 1 }} />
+          </Tabs>
+        </Box>
       </DialogTitle>
-      
       <DialogContent sx={{ pb: 4 }}>
-        <Tabs 
-          value={activeTab} 
-          onChange={handleTabChange} 
-          sx={{ mb: 3, borderBottom: '1px solid #e5e7eb' }}
-        >
-          <Tab label="Sous-titres originaux" />
-          <Tab label="Sous-titres modifiés" />
-        </Tabs>
-        
         {/* Formulaire d'édition */}
         {editingSubtitle && (
           <Paper elevation={2} sx={{ p: 3, mb: 3, bgcolor: '#f8fafc' }}>
